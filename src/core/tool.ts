@@ -1,10 +1,9 @@
 import { z, ZodSchema, ZodIssue } from "zod";
 
-// ─── Re-export zod for convenience ──────────────────────────────────────────
+// Re-export zod for convenience
 export { z };
 
-// ─── Tool Schema (LangChain-style) ───────────────────────────────────────────
-
+// Tool Schema (LangChain-style)
 export interface ToolSchema {
   name: string;
   description: string;
@@ -12,8 +11,7 @@ export interface ToolSchema {
   examples?: string[];
 }
 
-// ─── Zod Validation Result ───────────────────────────────────────────────────
-
+// Zod Validation Result
 export type ValidationSuccess<T> = { success: true; data: T };
 export type ValidationFailure = { success: false; error: string };
 export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
@@ -118,8 +116,7 @@ export class Tool<TInput = string> {
   }
 }
 
-// ─── Helper: format Zod issues into a readable string ───────────────────────
-
+// Helper: format Zod issues into a readable string
 function formatZodIssues(issues: ZodIssue[]): string {
   return issues
     .map((issue) => {
@@ -129,8 +126,7 @@ function formatZodIssues(issues: ZodIssue[]): string {
     .join("\n");
 }
 
-// ─── Tool Registry ───────────────────────────────────────────────────────────
-
+// Tool Registry
 export class ToolRegistry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools: Map<string, Tool<any>>;

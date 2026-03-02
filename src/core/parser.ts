@@ -1,5 +1,4 @@
-// ─── Parsed Output ─────────────────────────────────────────────────────
-
+// Parsed Output 
 export interface ParsedOutput {
   thought?: string;
   action?: string;
@@ -7,8 +6,7 @@ export interface ParsedOutput {
   finalAnswer?: string;
 }
 
-// ─── ReAct Output Parser ───────────────────────────────────────────────
-
+// ReAct Output Parser 
 export function parseReActOutput(text: string): ParsedOutput {
   const result: ParsedOutput = {};
 
@@ -40,8 +38,7 @@ export function parseReActOutput(text: string): ParsedOutput {
   return result;
 }
 
-// ─── Check if output is a final answer ─────────────────────────────────
-
+// Check if output is a final answer 
 export function isFinalAnswer(parsed: ParsedOutput): boolean {
   return parsed.finalAnswer !== undefined;
 }

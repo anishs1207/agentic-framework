@@ -1,5 +1,4 @@
-// ─── Prompt Templates (like LangChain's PromptTemplate) ────────────────
-
+// Prompt Templates (like LangChain's PromptTemplate)
 export class PromptTemplate {
   private template: string;
   private inputVariables: string[];
@@ -25,8 +24,7 @@ export class PromptTemplate {
   }
 }
 
-// ─── Built-in ReAct Prompt ─────────────────────────────────────────────
-
+// Built-in ReAct Prompt 
 export const REACT_SYSTEM_PROMPT = PromptTemplate.fromTemplate(`You are an intelligent AI agent that follows the ReAct pattern (Reason + Act).
 You have access to a set of tools. Your goal is to answer the user's question as helpfully as possible.
 

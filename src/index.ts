@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 import * as readline from "readline";
+import * as fs from "fs";
+import * as path from "path";
 import {
   LLM,
   Agent,
@@ -15,6 +17,8 @@ import {
   wikipediaTool,
   randomNumberTool,
   stringUtilsTool,
+  unitConverterTool,
+  currencyConverterTool,
 } from "./tools/index.js";
 
 dotenv.config();
@@ -37,7 +41,7 @@ function printBanner() {
   console.log(`
 ${CYAN}${BOLD}    ╔═══════════════════════════════════════════════════╗
     ║                                                   ║
-    ║       🤖  AGENTIC FRAMEWORK  v1.0                 ║
+    ║       🤖  AGENTIC FRAMEWORK  v1.1                 ║
     ║       ─────────────────────────                   ║
     ║       Powered by Google Gemini                    ║
     ║       ReAct Pattern • Tool Use • Memory           ║
@@ -71,13 +75,102 @@ function printHelp() {
 
   console.log(`
 ${CYAN}${BOLD}  Commands:${RESET}
-    ${YELLOW}/help${RESET}      ${DIM}Show this help message${RESET}
-    ${YELLOW}/tools${RESET}     ${DIM}List all available tools with details${RESET}
-    ${YELLOW}/memory${RESET}    ${DIM}Show conversation memory${RESET}
-    ${YELLOW}/clear${RESET}     ${DIM}Clear conversation memory${RESET}
-    ${YELLOW}/verbose${RESET}   ${DIM}Toggle verbose mode (show/hide agent internals)${RESET}
-    ${YELLOW}/exit${RESET}      ${DIM}Exit the application${RESET}
+    ${YELLOW}/help${RESET}          ${DIM}Show this help message${RESET}
+    ${YELLOW}/tools${RESET}         ${DIM}List all available tools with details${RESET}
+    ${YELLOW}/memory${RESET}        ${DIM}Show conversation memory${RESET}
+    ${YELLOW}/clear${RESET}         ${DIM}Clear conversation memory${RESET}
+    ${YELLOW}/verbose${RESET}       ${DIM}Toggle verbose mode (show/hide agent internals)${RESET}
+    ${YELLOW}/stats${RESET}         ${DIM}Show session statistics (queries, tools used, timing)${RESET}
+    ${YELLOW}/export [file]${RESET} ${DIM}Export conversation history to a file (default: chat-export.txt)${RESET}
+    ${YELLOW}/exit${RESET}          ${DIM}Exit the application${RESET}
   `);
+}
+
+// ─── Session Stats ────────────────────────────────────────────────────────────
+interface SessionStats {
+  startTime: Date;
+  totalQueries: number;
+  totalIterations: number;
+  totalToolCalls: number;
+  toolCallCounts: Record<string, number>;
+  totalDurationMs: number;
+  errors: number;
+}
+
+function printStats(stats: SessionStats) {
+  const BOLD = "\x1b[1m";
+  const CYAN = "\x1b[36m";
+  const YELLOW = "\x1b[33m";
+  const GREEN = "\x1b[32m";
+  const DIM = "\x1b[2m";
+  const RESET = "\x1b[0m";
+
+  const uptimeSec = ((Date.now() - stats.startTime.getTime()) / 1000).toFixed(0);
+  const avgDuration =
+    stats.totalQueries > 0
+      ? (stats.totalDurationMs / stats.totalQueries / 1000).toFixed(1)
+      : "0.0";
+
+  console.log(`\n${CYAN}${BOLD}  📊 Session Statistics${RESET}`);
+  console.log(`${DIM}  ${"─".repeat(40)}${RESET}`);
+  console.log(`  ${YELLOW}Session uptime:${RESET}    ${GREEN}${uptimeSec}s${RESET}`);
+  console.log(`  ${YELLOW}Total queries:${RESET}     ${GREEN}${stats.totalQueries}${RESET}`);
+  console.log(`  ${YELLOW}Total iterations:${RESET}  ${GREEN}${stats.totalIterations}${RESET}`);
+  console.log(`  ${YELLOW}Total tool calls:${RESET}  ${GREEN}${stats.totalToolCalls}${RESET}`);
+  console.log(`  ${YELLOW}Avg response time:${RESET} ${GREEN}${avgDuration}s${RESET}`);
+  console.log(`  ${YELLOW}Errors:${RESET}            ${GREEN}${stats.errors}${RESET}`);
+
+  if (Object.keys(stats.toolCallCounts).length > 0) {
+    console.log(`\n  ${CYAN}${BOLD}  🔧 Tool Usage Breakdown:${RESET}`);
+    const sorted = Object.entries(stats.toolCallCounts).sort(([, a], [, b]) => b - a);
+    for (const [tool, count] of sorted) {
+      const bar = "█".repeat(Math.min(count * 2, 20));
+      console.log(`  ${YELLOW}  ${tool.padEnd(20)}${RESET} ${GREEN}${bar} ${count}${RESET}`);
+    }
+  }
+  console.log();
+}
+
+// ─── Export Conversation ──────────────────────────────────────────────────────
+function exportConversation(
+  memory: ConversationWindowMemory,
+  stats: SessionStats,
+  filepath: string
+) {
+  const messages = memory.getMessages();
+  const lines: string[] = [];
+
+  lines.push("═══════════════════════════════════════════════════");
+  lines.push("  AGENTIC FRAMEWORK - Conversation Export");
+  lines.push(`  Exported at: ${new Date().toLocaleString()}`);
+  lines.push(`  Session queries: ${stats.totalQueries} | Tool calls: ${stats.totalToolCalls}`);
+  lines.push("═══════════════════════════════════════════════════\n");
+
+  if (messages.length === 0) {
+    lines.push("(No messages in current memory window)");
+  } else {
+    for (const msg of messages) {
+      const ts = msg.timestamp.toLocaleTimeString();
+      const role =
+        msg.role === "user" ? "🧑 You" :
+        msg.role === "assistant" ? "🤖 AI" :
+        `🔧 Tool[${msg.metadata?.tool ?? "?"}]`;
+      lines.push(`[${ts}] ${role}`);
+      lines.push(msg.content);
+      lines.push("");
+    }
+  }
+
+  lines.push("\n── Session Stats ──────────────────────────────────");
+  lines.push(`Total queries: ${stats.totalQueries}`);
+  lines.push(`Total iterations: ${stats.totalIterations}`);
+  lines.push(`Total tool calls: ${stats.totalToolCalls}`);
+  lines.push(`Errors: ${stats.errors}`);
+  if (Object.keys(stats.toolCallCounts).length > 0) {
+    lines.push(`Tool breakdown: ${JSON.stringify(stats.toolCallCounts, null, 2)}`);
+  }
+
+  fs.writeFileSync(filepath, lines.join("\n"), "utf-8");
 }
 
 async function main() {
@@ -104,10 +197,22 @@ async function main() {
     .register(getTimeTool)
     .register(wikipediaTool)
     .register(randomNumberTool)
-    .register(stringUtilsTool);
+    .register(stringUtilsTool)
+    .register(unitConverterTool)
+    .register(currencyConverterTool);
 
-  const memory = new ConversationWindowMemory(20); 
+  const memory = new ConversationWindowMemory(20);
 
+  // ─── Session Stats Tracker ────────────────────────────────────────────────
+  const stats: SessionStats = {
+    startTime: new Date(),
+    totalQueries: 0,
+    totalIterations: 0,
+    totalToolCalls: 0,
+    toolCallCounts: {},
+    totalDurationMs: 0,
+    errors: 0,
+  };
 
   let verbose = true;
 
@@ -115,7 +220,10 @@ async function main() {
     onAgentStart: (input) => {
       if (verbose) logger.subHeader(`Processing: "${input}"`);
     },
-    onAgentEnd: (answer) => {
+    onAgentEnd: (_answer) => {},
+    onToolEnd: (toolName, _output) => {
+      stats.totalToolCalls++;
+      stats.toolCallCounts[toolName] = (stats.toolCallCounts[toolName] ?? 0) + 1;
     },
   };
 
@@ -152,19 +260,20 @@ async function main() {
 
     if (trimmed.startsWith("/")) {
       const cmd = trimmed.toLowerCase();
+      const cmdBase = cmd.split(/\s+/)[0];
 
-      if (cmd === "/exit" || cmd === "/quit") {
+      if (cmdBase === "/exit" || cmdBase === "/quit") {
         console.log("\n\x1b[33m👋 Goodbye! Thanks for using Agentic Framework.\x1b[0m\n");
         rl.close();
         break;
       }
 
-      if (cmd === "/help") {
+      if (cmdBase === "/help") {
         printHelp();
         continue;
       }
 
-      if (cmd === "/tools") {
+      if (cmdBase === "/tools") {
         console.log();
         registry.listNames().forEach((name) => {
           const tool = registry.get(name);
@@ -181,7 +290,7 @@ async function main() {
         continue;
       }
 
-      if (cmd === "/memory") {
+      if (cmdBase === "/memory") {
         const messages = memory.getMessages();
         if (messages.length === 0) {
           console.log("\x1b[2m  🧠 Memory is empty.\x1b[0m\n");
@@ -197,16 +306,36 @@ async function main() {
         continue;
       }
 
-      if (cmd === "/clear") {
+      if (cmdBase === "/clear") {
         memory.clear();
         console.log("\x1b[32m  🧹 Memory cleared!\x1b[0m\n");
         continue;
       }
 
-      if (cmd === "/verbose") {
+      if (cmdBase === "/verbose") {
         verbose = !verbose;
         logger.verbose = verbose;
         console.log(`\x1b[33m  🔊 Verbose mode: ${verbose ? "ON" : "OFF"}\x1b[0m\n`);
+        continue;
+      }
+
+      // ─── /stats ───────────────────────────────────────────────────────────
+      if (cmdBase === "/stats") {
+        printStats(stats);
+        continue;
+      }
+
+      // ─── /export [filename] ──────────────────────────────────────────────
+      if (cmdBase === "/export") {
+        const parts = trimmed.split(/\s+/);
+        const filename = parts[1] || "chat-export.txt";
+        const filepath = path.resolve(filename);
+        try {
+          exportConversation(memory, stats, filepath);
+          console.log(`\x1b[32m  💾 Conversation exported to: ${filepath}\x1b[0m\n`);
+        } catch (err: any) {
+          console.log(`\x1b[31m  ❌ Export failed: ${err.message}\x1b[0m\n`);
+        }
         continue;
       }
 
@@ -222,12 +351,18 @@ async function main() {
       const result = await agent.run(trimmed);
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
+      // Update session stats
+      stats.totalQueries++;
+      stats.totalIterations += result.iterations;
+      stats.totalDurationMs += Date.now() - startTime;
+
       console.log(
         `\n\x1b[2m  ⏱  Completed in ${duration}s | ${result.iterations} iteration(s) | Tools used: ${
           result.toolsUsed.length > 0 ? result.toolsUsed.join(", ") : "none"
         }\x1b[0m\n`
       );
     } catch (err: any) {
+      stats.errors++;
       logger.error(err.message);
       console.log();
     }

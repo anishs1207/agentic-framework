@@ -8,8 +8,8 @@ export type { LLMConfig } from "./llm.js";
 export { Agent } from "./agent.js";
 export type { AgentConfig, AgentResult } from "./agent.js";
 
-export { ConversationBufferMemory, ConversationWindowMemory } from "./memory.js";
-export type { Message, MessageRole, BaseMemory } from "./memory.js";
+export { ConversationBufferMemory, ConversationWindowMemory, SummarizerMemory } from "./memory.js";
+export type { Message, MessageRole, BaseMemory, SummarizerMemoryOptions } from "./memory.js";
 
 export { PromptTemplate, REACT_SYSTEM_PROMPT } from "./prompt.js";
 export { parseReActOutput, isFinalAnswer, isToolCall } from "./parser.js";
