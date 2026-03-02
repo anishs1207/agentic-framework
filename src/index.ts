@@ -1,230 +1,84 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import * as readline from "readline";
-
-// design the agent from scratch
-
-// while(not done):
-//     think()
-//     maybe call tool()
-//     observe()
+import {
+  LLM,
+  Agent,
+  ToolRegistry,
+  ConversationWindowMemory,
+  logger,
+} from "./core/index.js";
+import type { AgentCallbacks } from "./core/index.js";
+import {
+  weatherTool,
+  calculatorTool,
+  getTimeTool,
+  wikipediaTool,
+  randomNumberTool,
+  stringUtilsTool,
+} from "./tools/index.js";
 
 dotenv.config();
 
-// ─── Tool ──────────────────────────────────────────────────────────────
-
-class Tool {
-  name: string;
-  description: string;
-  func: (input: string) => Promise<string>;
-
-  constructor(
-    name: string,
-    description: string,
-    func: (input: string) => Promise<string>
-  ) {
-    this.name = name;
-    this.description = description;
-    this.func = func;
-  }
-
-  async execute(input: string): Promise<string> {
-    return await this.func(input);
-  }
-}
-
-// ─── Tool Registry ─────────────────────────────────────────────────────
-
-class ToolRegistry {
-  tools: Map<string, Tool>;
-
-  constructor() {
-    this.tools = new Map();
-  }
-
-  register(tool: Tool) {
-    this.tools.set(tool.name, tool);
-  }
-
-  get(name: string): Tool | undefined {
-    return this.tools.get(name);
-  }
-
-  listDescriptions(): string {
-    return [...this.tools.values()]
-      .map((t) => `${t.name} : ${t.description}`)
-      .join("\n");
-  }
-}
-
-// ─── LLM Wrapper (Gemini) ──────────────────────────────────────────────
-
-class LLM {
-  private model: any;
-
-  constructor(apiKey: string, modelName: string = "gemini-2.5-flash") {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({ model: modelName });
-  }
-
-  async generate(prompt: string): Promise<string> {
-    const result = await this.model.generateContent(prompt);
-    const response = result.response;
-    return response.text();
-  }
-}
-
-// ─── Output Parser ─────────────────────────────────────────────────────
-
-interface ParsedOutput {
-  action?: string;
-  input?: string;
-  final?: string;
-}
-
-function parseOutput(text: string): ParsedOutput {
-  const actionMatch = text.match(/Action:\s*(.*)/);
-  const inputMatch = text.match(/Action Input:\s*(.*)/);
-
-  if (!actionMatch) return { final: text };
-
-  return {
-    action: actionMatch[1].trim(),
-    input: inputMatch?.[1].trim(),
-  };
-}
-
-// ─── The ReAct Loop Agent ──────────────────────────────────────────────
-
-class Agent {
-  llm: LLM;
-  tools: ToolRegistry;
-
-  constructor(llm: LLM, tools: ToolRegistry) {
-    this.llm = llm;
-    this.tools = tools;
-  }
-
-  async run(userInput: string): Promise<string> {
-    let scratchpad = "";
-
-    for (let i = 0; i < 5; i++) {
-      const prompt = `
-You are an intelligent agent that follows the ReAct pattern (Reason + Act).
-
-Available tools:
-${this.tools.listDescriptions()}
-
-Instructions:
-- Think step by step about the user's question.
-- If you need to use a tool, respond EXACTLY in this format:
-    Thought: <your reasoning>
-    Action: <tool_name>
-    Action Input: <input to the tool>
-- If you already know the final answer (or after getting observations), respond with:
-    Thought: <your reasoning>
-    Final Answer: <your final answer>
-
-Important: Always respond with EITHER an Action OR a Final Answer, never both.
-
-Previous reasoning and observations:
-${scratchpad || "(none)"}
-
-User question: ${userInput}
-`;
-
-      console.log(`\n--- Iteration ${i + 1} ---`);
-      const output = await this.llm.generate(prompt);
-      console.log("LLM output:\n", output);
-
-      // Check for final answer first
-      const finalMatch = output.match(/Final Answer:\s*([\s\S]*)/);
-      if (finalMatch) {
-        return finalMatch[1].trim();
-      }
-
-      const parsed = parseOutput(output);
-
-      if (parsed.final && !parsed.action) {
-        return parsed.final;
-      }
-
-      if (!parsed.action) {
-        return output; // fallback: return raw output if no action and no final answer
-      }
-
-      const tool = this.tools.get(parsed.action);
-
-      if (!tool) {
-        scratchpad += `\nThought: Tried to use tool "${parsed.action}" but it does not exist.\n`;
-        continue;
-      }
-
-      const observation = await tool.execute(parsed.input || "");
-      console.log(`Tool "${parsed.action}" returned: ${observation}`);
-
-      scratchpad += `
-Thought: ${output}
-Observation: ${observation}
-`;
-    }
-
-    return "Max iterations reached.";
-  }
-}
-
-// ─── Define Tools ──────────────────────────────────────────────────────
-
-const weatherTool = new Tool(
-  "weather",
-  "Get current weather for a city. Input: city name",
-  async (city: string) => {
-    // Simulated weather data
-    const temps: Record<string, string> = {
-      delhi: "35°C, Sunny",
-      mumbai: "30°C, Humid",
-      london: "15°C, Cloudy",
-      "new york": "22°C, Clear",
-    };
-    const key = city.toLowerCase().trim();
-    return temps[key] || `Weather for ${city}: 25°C, Partly Cloudy`;
-  }
-);
-
-const calculatorTool = new Tool(
-  "calculator",
-  "Evaluate a math expression. Input: a math expression like '2 + 2'",
-  async (expression: string) => {
-    try {
-      // Simple and safe evaluation for basic math
-      const result = Function(`"use strict"; return (${expression})`)();
-      return `Result: ${result}`;
-    } catch {
-      return `Error evaluating expression: ${expression}`;
-    }
-  }
-);
-
-const getTimeTool = new Tool(
-  "getTime",
-  "Get the current date and time. Input: none required",
-  async (_input: string) => {
-    const now = new Date();
-    return `Current date and time: ${now.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST`;
-  }
-);
-
-// ─── CLI Helper ────────────────────────────────────────────────────────
-
 function askQuestion(rl: readline.Interface, prompt: string): Promise<string> {
   return new Promise((resolve) => {
-    rl.question(prompt, (answer) => {
-      resolve(answer);
-    });
+    rl.question(prompt, (answer) => resolve(answer));
   });
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────
+function printBanner() {
+  const CYAN = "\x1b[36m";
+  const BOLD = "\x1b[1m";
+  const DIM = "\x1b[2m";
+  const RESET = "\x1b[0m";
+  const YELLOW = "\x1b[33m";
+  const MAGENTA = "\x1b[35m";
+  const GREEN = "\x1b[32m";
+
+  console.log(`
+${CYAN}${BOLD}    ╔═══════════════════════════════════════════════════╗
+    ║                                                   ║
+    ║       🤖  AGENTIC FRAMEWORK  v1.0                 ║
+    ║       ─────────────────────────                   ║
+    ║       Powered by Google Gemini                    ║
+    ║       ReAct Pattern • Tool Use • Memory           ║
+    ║                                                   ║
+    ╚═══════════════════════════════════════════════════╝${RESET}
+
+${YELLOW}${BOLD}  Architecture:${RESET}${DIM}
+    ┌──────────┐    ┌──────────┐    ┌──────────┐
+    │  Prompt  │───▶│   LLM    │───▶│  Parser  │
+    │ Template │    │ (Gemini) │    │ (ReAct)  │
+    └──────────┘    └──────────┘    └─────┬────┘
+                                          │
+    ┌──────────┐    ┌──────────┐    ┌─────▼────┐
+    │  Memory  │◀───│   Agent  │◀───│  Router  │
+    │ (Window) │    │ (Engine) │    │          │
+    └──────────┘    └──────────┘    └─────┬────┘
+                                          │
+                                    ┌─────▼────┐
+                                    │  Tools   │
+                                    │ Registry │
+                                    └──────────┘${RESET}
+`);
+}
+
+function printHelp() {
+  const DIM = "\x1b[2m";
+  const BOLD = "\x1b[1m";
+  const CYAN = "\x1b[36m";
+  const YELLOW = "\x1b[33m";
+  const RESET = "\x1b[0m";
+
+  console.log(`
+${CYAN}${BOLD}  Commands:${RESET}
+    ${YELLOW}/help${RESET}      ${DIM}Show this help message${RESET}
+    ${YELLOW}/tools${RESET}     ${DIM}List all available tools with details${RESET}
+    ${YELLOW}/memory${RESET}    ${DIM}Show conversation memory${RESET}
+    ${YELLOW}/clear${RESET}     ${DIM}Clear conversation memory${RESET}
+    ${YELLOW}/verbose${RESET}   ${DIM}Toggle verbose mode (show/hide agent internals)${RESET}
+    ${YELLOW}/exit${RESET}      ${DIM}Exit the application${RESET}
+  `);
+}
 
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -235,43 +89,147 @@ async function main() {
     process.exit(1);
   }
 
-  // Setup
-  const llm = new LLM(apiKey);
-  const registry = new ToolRegistry();
-  registry.register(weatherTool);
-  registry.register(calculatorTool);
-  registry.register(getTimeTool);
+  const llm = new LLM({
+    apiKey,
+    modelName: "gemini-2.5-flash",
+    maxRetries: 3,
+    retryDelayMs: 2000,
+    temperature: 0.7,
+  });
 
-  const agent = new Agent(llm, registry);
+  const registry = new ToolRegistry();
+  registry
+    .register(weatherTool)
+    .register(calculatorTool)
+    .register(getTimeTool)
+    .register(wikipediaTool)
+    .register(randomNumberTool)
+    .register(stringUtilsTool);
+
+  const memory = new ConversationWindowMemory(20); 
+
+
+  let verbose = true;
+
+  const callbacks: AgentCallbacks = {
+    onAgentStart: (input) => {
+      if (verbose) logger.subHeader(`Processing: "${input}"`);
+    },
+    onAgentEnd: (answer) => {
+    },
+  };
+
+  const agent = new Agent({
+    llm,
+    tools: registry,
+    memory,
+    maxIterations: 6,
+    verbose,
+    callbacks,
+  });
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  console.log("🤖 Agentic Framework - Powered by Gemini");
-  console.log("═══════════════════════════════════════════");
-  console.log("Available tools: weather, calculator, getTime");
-  console.log('Type your query below. Type "exit" to quit.\n');
+  printBanner();
+  logger.toolList(
+    registry
+      .listNames()
+      .map((name) => {
+        const tool = registry.get(name);
+        return `${name} — ${tool?.description || ""}`;
+      })
+  );
+  console.log('  Type /help for commands, or ask anything!\n');
 
   while (true) {
-    const userInput = await askQuestion(rl, "🧑 You: ");
-
+    const userInput = await askQuestion(rl, "\x1b[1m\x1b[36m🧑 You:\x1b[0m ");
     const trimmed = userInput.trim();
+
     if (!trimmed) continue;
-    if (trimmed.toLowerCase() === "exit" || trimmed.toLowerCase() === "quit") {
-      console.log("\n👋 Goodbye!");
-      rl.close();
-      break;
+
+    if (trimmed.startsWith("/")) {
+      const cmd = trimmed.toLowerCase();
+
+      if (cmd === "/exit" || cmd === "/quit") {
+        console.log("\n\x1b[33m👋 Goodbye! Thanks for using Agentic Framework.\x1b[0m\n");
+        rl.close();
+        break;
+      }
+
+      if (cmd === "/help") {
+        printHelp();
+        continue;
+      }
+
+      if (cmd === "/tools") {
+        console.log();
+        registry.listNames().forEach((name) => {
+          const tool = registry.get(name);
+          if (tool) {
+            console.log(`\x1b[35m\x1b[1m  📦 ${tool.name}\x1b[0m`);
+            console.log(`\x1b[2m     ${tool.description}\x1b[0m`);
+            console.log(`\x1b[2m     Input: ${tool.inputDescription}\x1b[0m`);
+            if (tool.examples.length > 0) {
+              console.log(`\x1b[2m     Examples: ${tool.examples.join(", ")}\x1b[0m`);
+            }
+            console.log();
+          }
+        });
+        continue;
+      }
+
+      if (cmd === "/memory") {
+        const messages = memory.getMessages();
+        if (messages.length === 0) {
+          console.log("\x1b[2m  🧠 Memory is empty.\x1b[0m\n");
+        } else {
+          console.log(`\x1b[33m\x1b[1m\n  🧠 Memory (${messages.length} messages):\x1b[0m`);
+          messages.forEach((m, i) => {
+            const role = m.role === "user" ? "🧑 Human" : m.role === "assistant" ? "🤖 AI" : "🔧 Tool";
+            const content = m.content.length > 100 ? m.content.slice(0, 100) + "..." : m.content;
+            console.log(`\x1b[2m  ${i + 1}. [${role}] ${content}\x1b[0m`);
+          });
+          console.log();
+        }
+        continue;
+      }
+
+      if (cmd === "/clear") {
+        memory.clear();
+        console.log("\x1b[32m  🧹 Memory cleared!\x1b[0m\n");
+        continue;
+      }
+
+      if (cmd === "/verbose") {
+        verbose = !verbose;
+        logger.verbose = verbose;
+        console.log(`\x1b[33m  🔊 Verbose mode: ${verbose ? "ON" : "OFF"}\x1b[0m\n`);
+        continue;
+      }
+
+      console.log(`\x1b[31m  Unknown command: ${trimmed}\x1b[0m`);
+      console.log(`\x1b[2m  Type /help to see available commands.\x1b[0m\n`);
+      continue;
     }
 
-    console.log("\n⏳ Thinking...\n");
+    console.log();
+    const startTime = Date.now();
 
     try {
       const result = await agent.run(trimmed);
-      console.log("\n✅ Agent:", result, "\n");
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      console.log(
+        `\n\x1b[2m  ⏱  Completed in ${duration}s | ${result.iterations} iteration(s) | Tools used: ${
+          result.toolsUsed.length > 0 ? result.toolsUsed.join(", ") : "none"
+        }\x1b[0m\n`
+      );
     } catch (err: any) {
-      console.error("\n❌ Error:", err.message, "\n");
+      logger.error(err.message);
+      console.log();
     }
   }
 }
