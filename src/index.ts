@@ -2,6 +2,9 @@ import dotenv from "dotenv";
 import * as readline from "readline";
 import * as fs from "fs";
 import * as path from "path";
+
+dotenv.config();
+
 import {
   LLM,
   Agent,
@@ -21,117 +24,37 @@ import {
   currencyConverterTool,
 } from "./tools/index.js";
 
-dotenv.config();
+import {
+  theme,
+  printBanner,
+  printHelp,
+  printSection,
+  printToolCard,
+  printStats,
+  createSpinner,
+  type SessionStats,
+} from "./cli/ui.js";
 
+import {
+  buildWorkflow,
+  runWorkflow,
+  listWorkflows,
+  loadWorkflowByName,
+} from "./cli/workflow.js";
+
+import { startTelegramBridge, stopTelegramBridge, isTelegramActive } from "./cli/telegram.js";
+import { startWhatsAppBridge, stopWhatsAppBridge, isWhatsAppActive } from "./cli/whatsapp.js";
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────────────────────
 function askQuestion(rl: readline.Interface, prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(prompt, (answer) => resolve(answer));
-  });
+  return new Promise((resolve) => rl.question(prompt, resolve));
 }
 
-function printBanner() {
-  const CYAN = "\x1b[36m";
-  const BOLD = "\x1b[1m";
-  const DIM = "\x1b[2m";
-  const RESET = "\x1b[0m";
-  const YELLOW = "\x1b[33m";
-  const MAGENTA = "\x1b[35m";
-  const GREEN = "\x1b[32m";
-
-  console.log(`
-${CYAN}${BOLD}    ╔═══════════════════════════════════════════════════╗
-    ║                                                   ║
-    ║       🤖  AGENTIC FRAMEWORK  v1.1                 ║
-    ║       ─────────────────────────                   ║
-    ║       Powered by Google Gemini                    ║
-    ║       ReAct Pattern • Tool Use • Memory           ║
-    ║                                                   ║
-    ╚═══════════════════════════════════════════════════╝${RESET}
-
-${YELLOW}${BOLD}  Architecture:${RESET}${DIM}
-    ┌──────────┐    ┌──────────┐    ┌──────────┐
-    │  Prompt  │───▶│   LLM    │───▶│  Parser  │
-    │ Template │    │ (Gemini) │    │ (ReAct)  │
-    └──────────┘    └──────────┘    └─────┬────┘
-                                          │
-    ┌──────────┐    ┌──────────┐    ┌─────▼────┐
-    │  Memory  │◀───│   Agent  │◀───│  Router  │
-    │ (Window) │    │ (Engine) │    │          │
-    └──────────┘    └──────────┘    └─────┬────┘
-                                          │
-                                    ┌─────▼────┐
-                                    │  Tools   │
-                                    │ Registry │
-                                    └──────────┘${RESET}
-`);
-}
-
-function printHelp() {
-  const DIM = "\x1b[2m";
-  const BOLD = "\x1b[1m";
-  const CYAN = "\x1b[36m";
-  const YELLOW = "\x1b[33m";
-  const RESET = "\x1b[0m";
-
-  console.log(`
-${CYAN}${BOLD}  Commands:${RESET}
-    ${YELLOW}/help${RESET}          ${DIM}Show this help message${RESET}
-    ${YELLOW}/tools${RESET}         ${DIM}List all available tools with details${RESET}
-    ${YELLOW}/memory${RESET}        ${DIM}Show conversation memory${RESET}
-    ${YELLOW}/clear${RESET}         ${DIM}Clear conversation memory${RESET}
-    ${YELLOW}/verbose${RESET}       ${DIM}Toggle verbose mode (show/hide agent internals)${RESET}
-    ${YELLOW}/stats${RESET}         ${DIM}Show session statistics (queries, tools used, timing)${RESET}
-    ${YELLOW}/export [file]${RESET} ${DIM}Export conversation history to a file (default: chat-export.txt)${RESET}
-    ${YELLOW}/exit${RESET}          ${DIM}Exit the application${RESET}
-  `);
-}
-
-// ─── Session Stats ────────────────────────────────────────────────────────────
-interface SessionStats {
-  startTime: Date;
-  totalQueries: number;
-  totalIterations: number;
-  totalToolCalls: number;
-  toolCallCounts: Record<string, number>;
-  totalDurationMs: number;
-  errors: number;
-}
-
-function printStats(stats: SessionStats) {
-  const BOLD = "\x1b[1m";
-  const CYAN = "\x1b[36m";
-  const YELLOW = "\x1b[33m";
-  const GREEN = "\x1b[32m";
-  const DIM = "\x1b[2m";
-  const RESET = "\x1b[0m";
-
-  const uptimeSec = ((Date.now() - stats.startTime.getTime()) / 1000).toFixed(0);
-  const avgDuration =
-    stats.totalQueries > 0
-      ? (stats.totalDurationMs / stats.totalQueries / 1000).toFixed(1)
-      : "0.0";
-
-  console.log(`\n${CYAN}${BOLD}  📊 Session Statistics${RESET}`);
-  console.log(`${DIM}  ${"─".repeat(40)}${RESET}`);
-  console.log(`  ${YELLOW}Session uptime:${RESET}    ${GREEN}${uptimeSec}s${RESET}`);
-  console.log(`  ${YELLOW}Total queries:${RESET}     ${GREEN}${stats.totalQueries}${RESET}`);
-  console.log(`  ${YELLOW}Total iterations:${RESET}  ${GREEN}${stats.totalIterations}${RESET}`);
-  console.log(`  ${YELLOW}Total tool calls:${RESET}  ${GREEN}${stats.totalToolCalls}${RESET}`);
-  console.log(`  ${YELLOW}Avg response time:${RESET} ${GREEN}${avgDuration}s${RESET}`);
-  console.log(`  ${YELLOW}Errors:${RESET}            ${GREEN}${stats.errors}${RESET}`);
-
-  if (Object.keys(stats.toolCallCounts).length > 0) {
-    console.log(`\n  ${CYAN}${BOLD}  🔧 Tool Usage Breakdown:${RESET}`);
-    const sorted = Object.entries(stats.toolCallCounts).sort(([, a], [, b]) => b - a);
-    for (const [tool, count] of sorted) {
-      const bar = "█".repeat(Math.min(count * 2, 20));
-      console.log(`  ${YELLOW}  ${tool.padEnd(20)}${RESET} ${GREEN}${bar} ${count}${RESET}`);
-    }
-  }
-  console.log();
-}
-
-// ─── Export Conversation ──────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
+// Conversation export
+// ──────────────────────────────────────────────────────────────────────────────
 function exportConversation(
   memory: ConversationWindowMemory,
   stats: SessionStats,
@@ -140,11 +63,12 @@ function exportConversation(
   const messages = memory.getMessages();
   const lines: string[] = [];
 
-  lines.push("═══════════════════════════════════════════════════");
-  lines.push("  AGENTIC FRAMEWORK - Conversation Export");
+  lines.push("═══════════════════════════════════════════════════════");
+  lines.push("  AGENTIC FRAMEWORK v2.0 — Conversation Export");
+  lines.push(`  Model: ${stats.model}  |  Temperature: ${stats.temperature}`);
   lines.push(`  Exported at: ${new Date().toLocaleString()}`);
-  lines.push(`  Session queries: ${stats.totalQueries} | Tool calls: ${stats.totalToolCalls}`);
-  lines.push("═══════════════════════════════════════════════════\n");
+  lines.push(`  Queries: ${stats.totalQueries}  |  Tool calls: ${stats.totalToolCalls}`);
+  lines.push("═══════════════════════════════════════════════════════\n");
 
   if (messages.length === 0) {
     lines.push("(No messages in current memory window)");
@@ -161,7 +85,8 @@ function exportConversation(
     }
   }
 
-  lines.push("\n── Session Stats ──────────────────────────────────");
+  lines.push("\n── Session Stats ─────────────────────────────────────");
+  lines.push(`Model: ${stats.model} | Temperature: ${stats.temperature}`);
   lines.push(`Total queries: ${stats.totalQueries}`);
   lines.push(`Total iterations: ${stats.totalIterations}`);
   lines.push(`Total tool calls: ${stats.totalToolCalls}`);
@@ -173,23 +98,67 @@ function exportConversation(
   fs.writeFileSync(filepath, lines.join("\n"), "utf-8");
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// LLM / Agent factory (so we can rebuild on /model change)
+// ──────────────────────────────────────────────────────────────────────────────
+function buildLLMAndAgent(config: {
+  apiKey: string;
+  model: string;
+  temperature: number;
+  registry: ToolRegistry;
+  memory: ConversationWindowMemory;
+  stats: SessionStats;
+  verbose: boolean;
+}): Agent {
+  const { apiKey, model, temperature, registry, memory, stats, verbose } = config;
+
+  const llm = new LLM({
+    apiKey,
+    modelName: model,
+    maxRetries: 3,
+    retryDelayMs: 2000,
+    temperature,
+  });
+
+  const callbacks: AgentCallbacks = {
+    onAgentStart: (input) => {
+      if (verbose) logger.subHeader(`Processing: "${input.slice(0, 60)}"`);
+    },
+    onAgentEnd: () => {},
+    onToolEnd: (toolName) => {
+      stats.totalToolCalls++;
+      stats.toolCallCounts[toolName] = (stats.toolCallCounts[toolName] ?? 0) + 1;
+    },
+  };
+
+  return new Agent({
+    llm,
+    tools: registry,
+    memory,
+    maxIterations: 8,
+    verbose,
+    callbacks,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Main
+// ──────────────────────────────────────────────────────────────────────────────
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || apiKey === "your_gemini_api_key_here") {
-    console.error("❌ Please set your GEMINI_API_KEY in the .env file!");
-    console.error("   Get one at: https://aistudio.google.com/apikey");
+    console.log(
+      "\n" +
+      theme.error.bold("  ✖ GEMINI_API_KEY is not set!") + "\n" +
+      theme.muted("  Get one at: https://aistudio.google.com/apikey") + "\n" +
+      theme.muted("  Then add it to your .env file:") + "\n" +
+      theme.accent("  GEMINI_API_KEY=your_key_here") + "\n"
+    );
     process.exit(1);
   }
 
-  const llm = new LLM({
-    apiKey,
-    modelName: "gemini-2.5-flash",
-    maxRetries: 3,
-    retryDelayMs: 2000,
-    temperature: 0.7,
-  });
-
+  // ── Tool registry ──────────────────────────────────────────────────────────
   const registry = new ToolRegistry();
   registry
     .register(weatherTool)
@@ -203,7 +172,12 @@ async function main() {
 
   const memory = new ConversationWindowMemory(20);
 
-  // ─── Session Stats Tracker ────────────────────────────────────────────────
+  // ── Session config (mutable) ───────────────────────────────────────────────
+  let currentModel       = "gemini-2.5-flash";
+  let currentTemperature = 0.7;
+  let verbose            = true;
+  let persona: string | null = null;
+
   const stats: SessionStats = {
     startTime: new Date(),
     totalQueries: 0,
@@ -212,161 +186,317 @@ async function main() {
     toolCallCounts: {},
     totalDurationMs: 0,
     errors: 0,
+    model: currentModel,
+    temperature: currentTemperature,
   };
 
-  let verbose = true;
-
-  const callbacks: AgentCallbacks = {
-    onAgentStart: (input) => {
-      if (verbose) logger.subHeader(`Processing: "${input}"`);
-    },
-    onAgentEnd: (_answer) => {},
-    onToolEnd: (toolName, _output) => {
-      stats.totalToolCalls++;
-      stats.toolCallCounts[toolName] = (stats.toolCallCounts[toolName] ?? 0) + 1;
-    },
-  };
-
-  const agent = new Agent({
-    llm,
-    tools: registry,
-    memory,
-    maxIterations: 6,
-    verbose,
-    callbacks,
+  // ── Build initial agent ────────────────────────────────────────────────────
+  let agent = buildLLMAndAgent({
+    apiKey, model: currentModel, temperature: currentTemperature,
+    registry, memory, stats, verbose,
   });
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
+    terminal: false,
   });
 
+  // ── Startup UI ─────────────────────────────────────────────────────────────
   printBanner();
-  logger.toolList(
-    registry
-      .listNames()
-      .map((name) => {
-        const tool = registry.get(name);
-        return `${name} — ${tool?.description || ""}`;
-      })
-  );
-  console.log('  Type /help for commands, or ask anything!\n');
 
+  printSection("Available Tools");
+  registry.listNames().forEach((name) => {
+    const tool = registry.get(name)!;
+    console.log(
+      "  " + theme.primary("⚙  " + name.padEnd(22)) +
+      theme.muted(tool.description.slice(0, 55))
+    );
+  });
+  console.log(
+    "\n  " + theme.muted(`Model: ${currentModel}  |  Verbose: ON  |  Memory: 20 turns`) +
+    "\n  " + theme.muted("Type /help to see all commands.") + "\n"
+  );
+
+  // ── REPL loop ──────────────────────────────────────────────────────────────
   while (true) {
-    const userInput = await askQuestion(rl, "\x1b[1m\x1b[36m🧑 You:\x1b[0m ");
+    const prompt =
+      theme.secondary.bold("❯ ") +
+      theme.white.bold("You") +
+      theme.muted(` [${currentModel}]`) +
+      theme.secondary(" › ");
+
+    const userInput = await askQuestion(rl, prompt);
     const trimmed = userInput.trim();
 
     if (!trimmed) continue;
 
+    // ── Command dispatch ─────────────────────────────────────────────────────
     if (trimmed.startsWith("/")) {
-      const cmd = trimmed.toLowerCase();
-      const cmdBase = cmd.split(/\s+/)[0];
+      const parts = trimmed.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const args = parts.slice(1);
 
-      if (cmdBase === "/exit" || cmdBase === "/quit") {
-        console.log("\n\x1b[33m👋 Goodbye! Thanks for using Agentic Framework.\x1b[0m\n");
+      // ── /exit /quit ──────────────────────────────────────────────────────
+      if (cmd === "/exit" || cmd === "/quit") {
+        if (isTelegramActive()) stopTelegramBridge();
+        if (isWhatsAppActive()) await stopWhatsAppBridge();
+        console.log("\n" + theme.accent.bold("  👋 Goodbye! Happy building.\n"));
         rl.close();
         break;
       }
 
-      if (cmdBase === "/help") {
-        printHelp();
-        continue;
-      }
+      // ── /help ────────────────────────────────────────────────────────────
+      if (cmd === "/help") { printHelp(); continue; }
 
-      if (cmdBase === "/tools") {
-        console.log();
+      // ── /tools ───────────────────────────────────────────────────────────
+      if (cmd === "/tools") {
+        printSection("Tool Details");
         registry.listNames().forEach((name) => {
-          const tool = registry.get(name);
-          if (tool) {
-            console.log(`\x1b[35m\x1b[1m  📦 ${tool.name}\x1b[0m`);
-            console.log(`\x1b[2m     ${tool.description}\x1b[0m`);
-            console.log(`\x1b[2m     Input: ${tool.inputDescription}\x1b[0m`);
-            if (tool.examples.length > 0) {
-              console.log(`\x1b[2m     Examples: ${tool.examples.join(", ")}\x1b[0m`);
-            }
-            console.log();
-          }
+          const tool = registry.get(name)!;
+          printToolCard(tool);
         });
         continue;
       }
 
-      if (cmdBase === "/memory") {
+      // ── /memory ──────────────────────────────────────────────────────────
+      if (cmd === "/memory") {
         const messages = memory.getMessages();
         if (messages.length === 0) {
-          console.log("\x1b[2m  🧠 Memory is empty.\x1b[0m\n");
+          console.log("\n" + theme.muted("  🧠 Memory is empty.\n"));
         } else {
-          console.log(`\x1b[33m\x1b[1m\n  🧠 Memory (${messages.length} messages):\x1b[0m`);
+          printSection(`Memory (${messages.length} messages)`);
           messages.forEach((m, i) => {
-            const role = m.role === "user" ? "🧑 Human" : m.role === "assistant" ? "🤖 AI" : "🔧 Tool";
-            const content = m.content.length > 100 ? m.content.slice(0, 100) + "..." : m.content;
-            console.log(`\x1b[2m  ${i + 1}. [${role}] ${content}\x1b[0m`);
+            const role =
+              m.role === "user" ? theme.secondary("Human") :
+              m.role === "assistant" ? theme.primary("AI") :
+              theme.accent("Tool");
+            const snippet = m.content.length > 80 ? m.content.slice(0, 80) + "…" : m.content;
+            console.log("  " + theme.muted(`${i + 1}.`) + " [" + role + "] " + theme.muted(snippet));
           });
           console.log();
         }
         continue;
       }
 
-      if (cmdBase === "/clear") {
+      // ── /clear ───────────────────────────────────────────────────────────
+      if (cmd === "/clear") {
         memory.clear();
-        console.log("\x1b[32m  🧹 Memory cleared!\x1b[0m\n");
+        console.log("\n" + theme.success("  ✔ Memory cleared.\n"));
         continue;
       }
 
-      if (cmdBase === "/verbose") {
+      // ── /verbose ─────────────────────────────────────────────────────────
+      if (cmd === "/verbose") {
         verbose = !verbose;
         logger.verbose = verbose;
-        console.log(`\x1b[33m  🔊 Verbose mode: ${verbose ? "ON" : "OFF"}\x1b[0m\n`);
+        agent = buildLLMAndAgent({
+          apiKey, model: currentModel, temperature: currentTemperature,
+          registry, memory, stats, verbose,
+        });
+        console.log(
+          "\n" + (verbose
+            ? theme.success("  ✔ Verbose ON — agent internals will be shown.\n")
+            : theme.warn("  Verbose OFF — only final answers shown.\n"))
+        );
         continue;
       }
 
-      // ─── /stats ───────────────────────────────────────────────────────────
-      if (cmdBase === "/stats") {
+      // ── /model <name> ────────────────────────────────────────────────────
+      if (cmd === "/model") {
+        const newModel = args[0];
+        if (!newModel) {
+          console.log(
+            "\n  " + theme.muted("Current model: ") + theme.secondary(currentModel) +
+            "\n  " + theme.muted("Example: /model gemini-2.0-flash-exp\n")
+          );
+          continue;
+        }
+        currentModel = newModel;
+        stats.model = currentModel;
+        agent = buildLLMAndAgent({
+          apiKey, model: currentModel, temperature: currentTemperature,
+          registry, memory, stats, verbose,
+        });
+        console.log("\n" + theme.success(`  ✔ Model switched to: ${currentModel}\n`));
+        continue;
+      }
+
+      // ── /temperature <n> ─────────────────────────────────────────────────
+      if (cmd === "/temperature" || cmd === "/temp") {
+        const val = parseFloat(args[0]);
+        if (isNaN(val) || val < 0 || val > 2) {
+          console.log("\n" + theme.warn("  ⚠  Provide a number 0–2.  Example: /temperature 0.3\n"));
+          continue;
+        }
+        currentTemperature = val;
+        stats.temperature = val;
+        agent = buildLLMAndAgent({
+          apiKey, model: currentModel, temperature: currentTemperature,
+          registry, memory, stats, verbose,
+        });
+        console.log("\n" + theme.success(`  ✔ Temperature set to: ${val}\n`));
+        continue;
+      }
+
+      // ── /persona <text> ──────────────────────────────────────────────────
+      if (cmd === "/persona") {
+        if (args.length === 0) {
+          if (persona) {
+            console.log("\n" + theme.muted("  Current persona: ") + persona + "\n");
+          } else {
+            console.log("\n" + theme.muted("  No persona set. Use /persona <description>\n"));
+          }
+          continue;
+        }
+        persona = args.join(" ");
+        console.log("\n" + theme.success(`  ✔ Persona set: "${persona}"\n`));
+        // Note: persona is informational — inject it as a system message next query
+        // by prepending to the agent prompt (handled in the query below)
+        continue;
+      }
+
+      // ── /stats ───────────────────────────────────────────────────────────
+      if (cmd === "/stats") {
         printStats(stats);
         continue;
       }
 
-      // ─── /export [filename] ──────────────────────────────────────────────
-      if (cmdBase === "/export") {
-        const parts = trimmed.split(/\s+/);
-        const filename = parts[1] || "chat-export.txt";
+      // ── /export [filename] ────────────────────────────────────────────────
+      if (cmd === "/export") {
+        const filename = args[0] || "chat-export.txt";
         const filepath = path.resolve(filename);
         try {
           exportConversation(memory, stats, filepath);
-          console.log(`\x1b[32m  💾 Conversation exported to: ${filepath}\x1b[0m\n`);
+          console.log("\n" + theme.success(`  ✔ Exported to: ${filepath}\n`));
         } catch (err: any) {
-          console.log(`\x1b[31m  ❌ Export failed: ${err.message}\x1b[0m\n`);
+          console.log("\n" + theme.error(`  ✖ Export failed: ${err.message}\n`));
         }
         continue;
       }
 
-      console.log(`\x1b[31m  Unknown command: ${trimmed}\x1b[0m`);
-      console.log(`\x1b[2m  Type /help to see available commands.\x1b[0m\n`);
+      // ── /workflow ─────────────────────────────────────────────────────────
+      if (cmd === "/workflow") {
+        const wf = await buildWorkflow(rl, registry);
+        if (wf) {
+          const doRun = (
+            await askQuestion(rl, theme.accent("  Run this workflow now? [Y/n]: "))
+          ).trim().toLowerCase();
+          if (doRun !== "n") {
+            const initial = (await askQuestion(
+              rl, theme.accent("  Initial input (optional, press Enter to skip): ")
+            )).trim();
+            await runWorkflow(wf, agent, registry, initial || undefined);
+          }
+        }
+        continue;
+      }
+
+      // ── /workflow-list ────────────────────────────────────────────────────
+      if (cmd === "/workflow-list") {
+        listWorkflows();
+        continue;
+      }
+
+      // ── /workflow-run <name> ──────────────────────────────────────────────
+      if (cmd === "/workflow-run") {
+        if (args.length === 0) {
+          console.log("\n" + theme.warn("  Usage: /workflow-run <workflow-name>\n"));
+          continue;
+        }
+        const name = args.join(" ");
+        const wf = loadWorkflowByName(name);
+        if (!wf) {
+          console.log(
+            "\n" + theme.error(`  ✖ Workflow "${name}" not found.`) +
+            "\n" + theme.muted("  Use /workflow-list to see saved workflows.\n")
+          );
+          continue;
+        }
+        const initial = (await askQuestion(
+          rl, theme.accent("  Initial input (press Enter to skip): ")
+        )).trim();
+        await runWorkflow(wf, agent, registry, initial || undefined);
+        continue;
+      }
+
+      // ── /telegram ─────────────────────────────────────────────────────────
+      if (cmd === "/telegram") {
+        await startTelegramBridge(agent);
+        continue;
+      }
+
+      // ── /stop-telegram ────────────────────────────────────────────────────
+      if (cmd === "/stop-telegram") {
+        stopTelegramBridge();
+        continue;
+      }
+
+      // ── /whatsapp ─────────────────────────────────────────────────────────
+      if (cmd === "/whatsapp") {
+        await startWhatsAppBridge(agent);
+        continue;
+      }
+
+      // ── /stop-whatsapp ────────────────────────────────────────────────────
+      if (cmd === "/stop-whatsapp") {
+        await stopWhatsAppBridge();
+        continue;
+      }
+
+      // ── unknown command ───────────────────────────────────────────────────
+      console.log(
+        "\n" + theme.error(`  ✖ Unknown command: ${cmd}`) +
+        "\n" + theme.muted("  Type /help to see all commands.\n")
+      );
       continue;
     }
 
+    // ── Normal agent query ────────────────────────────────────────────────────
     console.log();
+    const spinner = verbose ? null : createSpinner("Thinking…").start();
     const startTime = Date.now();
 
+    let input = trimmed;
+    if (persona) {
+      input = `[System: ${persona}]\n\n${trimmed}`;
+    }
+
     try {
-      const result = await agent.run(trimmed);
+      const result = await agent.run(input);
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      // Update session stats
+      if (spinner) spinner.stop();
+
+      // Print the clean final answer box if verbose is off
+      if (!verbose) {
+        console.log(
+          "\n" + theme.primary.bold("  🤖 Answer:") + "\n" +
+          theme.white("  " + result.output.split("\n").join("\n  "))
+        );
+      }
+
+      // Meta line
+      console.log(
+        "\n" + theme.muted(
+          `  ⏱  ${duration}s | ${result.iterations} iter | tools: ${
+            result.toolsUsed.length > 0 ? result.toolsUsed.join(", ") : "none"
+          }`
+        ) + "\n"
+      );
+
       stats.totalQueries++;
       stats.totalIterations += result.iterations;
       stats.totalDurationMs += Date.now() - startTime;
-
-      console.log(
-        `\n\x1b[2m  ⏱  Completed in ${duration}s | ${result.iterations} iteration(s) | Tools used: ${
-          result.toolsUsed.length > 0 ? result.toolsUsed.join(", ") : "none"
-        }\x1b[0m\n`
-      );
     } catch (err: any) {
+      if (spinner) spinner.fail();
       stats.errors++;
-      logger.error(err.message);
-      console.log();
+      console.log("\n" + theme.error(`  ✖ ${err.message}\n`));
     }
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(theme.error("Fatal: " + err.message));
+  process.exit(1);
+});
