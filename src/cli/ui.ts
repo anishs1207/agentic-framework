@@ -40,7 +40,7 @@ export function printBanner() {
     "\n" +
     theme.muted("  v2.0  •  Powered by Gemini  •  ReAct • Tools • Memory") +
     "\n" +
-    theme.muted("  WhatsApp & Telegram bridges  •  Workflow builder"),
+    theme.muted("  Multi-Agent Swarms  •  Cron Scheduler  •  WhatsApp & Telegram"),
     {
       padding: 1,
       margin: { top: 1, bottom: 0, left: 1, right: 1 },
@@ -68,34 +68,86 @@ export function printSection(title: string) {
 // Help
 // ──────────────────────────────────────────────────────────────────────────────
 export function printHelp() {
-  const commands = [
-    ["/chat",            "Switch to direct chat mode (default)"],
-    ["/tools",           "List all available tools with details"],
-    ["/tool-add",        "Interactively create a new custom tool"],
-    ["/workflow",        "Build & run a multi-step agentic workflow"],
-    ["/workflow-list",   "Show saved workflows"],
-    ["/workflow-run <n>","Run a saved workflow by name"],
-    ["/memory",          "Show current conversation memory"],
-    ["/clear",           "Clear conversation memory"],
-    ["/verbose",         "Toggle verbose mode (show/hide agent internals)"],
-    ["/model <name>",    "Switch Gemini model (e.g. gemini-2.0-flash-exp)"],
-    ["/temperature <n>", "Set LLM temperature (0–1)"],
-    ["/persona <text>",  "Set a custom system persona for the agent"],
-    ["/stats",           "Session statistics dashboard"],
-    ["/export [file]",   "Export conversation to file"],
-    ["/whatsapp",        "Start WhatsApp bridge (scan QR to connect)"],
-    ["/telegram",        "Start Telegram bot bridge"],
-    ["/help",            "Show this help"],
-    ["/exit",            "Exit"],
+  const sections: [string, [string, string][]][] = [
+    ["Core", [
+      ["/tools",              "List all available tools with details"],
+      ["/memory",             "Show current conversation memory"],
+      ["/clear",              "Clear conversation memory"],
+      ["/verbose",            "Toggle verbose mode"],
+      ["/model <name>",       "Switch Gemini model"],
+      ["/temperature <n>",    "Set LLM temperature (0–2)"],
+      ["/persona <text>",     "Set a custom system persona"],
+      ["/stats",              "Session statistics dashboard"],
+      ["/export [file]",      "Export conversation to file"],
+      ["/trace",              "Toggle execution tracer (saves to ./traces/)"],
+    ]],
+    ["Prompt Library", [
+      ["/prompts [query]",    "List / search prompt library (10+ built-in)"],
+      ["/prompt <name>",      "Activate a named prompt as your persona"],
+      ["/prompt-save <name>", "Save current persona to prompt library"],
+    ]],
+    ["Sessions", [
+      ["/session-save <name>",  "Save current session to disk"],
+      ["/session-list",         "List all saved sessions"],
+      ["/session-load <name>",  "Restore a saved session (memory + config)"],
+      ["/session-delete <name>","Delete a saved session"],
+    ]],
+    ["Aliases", [
+      ["/alias-set /x /cmd",  "Create a command alias"],
+      ["/aliases",            "List all aliases"],
+      ["/alias-remove /x",    "Remove an alias"],
+    ]],
+    ["Batch & Plugins", [
+      ["/batch <file>",       "Run queries from a text file (one per line)"],
+      ["/plugin-list",        "List plugin files in ./plugins/"],
+      ["/plugin-reload",      "Reload plugins from ./plugins/ at runtime"],
+    ]],
+    ["Workflows", [
+      ["/workflow",           "Build & run a multi-step workflow"],
+      ["/workflow-list",      "Show all saved workflows"],
+      ["/workflow-run <n>",   "Run a saved workflow by name"],
+    ]],
+    ["Multi-Agent", [
+      ["/profiles",           "List saved agent profiles"],
+      ["/profile-create",     "Interactively define a new agent profile"],
+      ["/profile-delete <id>","Delete an agent profile"],
+      ["/spawn <profile>",    "Spawn an agent from a profile"],
+      ["/agents",             "List all currently spawned agents"],
+      ["/terminate <name>",   "Kill a spawned agent"],
+      ["/ask <agent> <msg>",  "Send a message to a specific spawned agent"],
+      ["/swarm <task>",       "Run all spawned agents in PARALLEL on task"],
+      ["/chain <msg>",        "Run spawned agents SEQUENTIALLY, chained"],
+    ]],
+    ["Cron Scheduler", [
+      ["/cron-add",           "Add a new scheduled job (interactive)"],
+      ["/cron-list",          "List all cron jobs with status"],
+      ["/cron-remove <name>", "Remove a cron job"],
+      ["/cron-enable <name>", "Enable a disabled cron job"],
+      ["/cron-disable <name>","Disable a cron job without deleting it"],
+      ["/cron-run <name>",    "Trigger a cron job immediately"],
+    ]],
+    ["Events & Bridges", [
+      ["/events [n]",         "Show last N events from the event bus"],
+      ["/whatsapp",           "Start WhatsApp bridge (scan QR)"],
+      ["/stop-whatsapp",      "Stop WhatsApp bridge"],
+      ["/telegram",           "Start Telegram bot bridge"],
+      ["/stop-telegram",      "Stop Telegram bridge"],
+    ]],
+    ["Session", [
+      ["/help",               "Show this help"],
+      ["/exit",               "Exit"],
+    ]],
   ];
 
-  printSection("Commands");
-  for (const [cmd, desc] of commands) {
-    console.log(
-      "  " +
-      theme.accent.bold(cmd.padEnd(24)) +
-      theme.muted(desc)
-    );
+  for (const [section, commands] of sections) {
+    printSection(section);
+    for (const [cmd, desc] of commands) {
+      console.log(
+        "  " +
+        theme.accent.bold(cmd.padEnd(28)) +
+        theme.muted(desc)
+      );
+    }
   }
   console.log();
 }
