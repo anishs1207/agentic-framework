@@ -5,12 +5,15 @@ import { VlmService } from './vlm.service';
 import { ImageRecord, PersonRecord, Relationship } from './image-memory.types';
 import * as fs from 'fs';
 
+import { VectorService } from './vector.service';
+
 @Injectable()
 export class ImagesService {
   constructor(
     private readonly store: ImageMemoryStore,
     private readonly pipeline: ImagePipeline,
     private readonly vlm: VlmService,
+    private readonly vector: VectorService,
   ) {}
 
   /**
@@ -67,6 +70,18 @@ export class ImagesService {
     return this.store.getRelationshipsForPerson(personId);
   }
 
+  // ─── Event endpoints ────────────────────────────────────────────────────
+
+  getAllEvents() {
+    return this.store.getAllEvents();
+  }
+
+  getMoodHistory(personId: string) {
+    const person = this.store.getPerson(personId);
+    if (!person) throw new NotFoundException(`Person ${personId} not found`);
+    return person.moodHistory || [];
+  }
+
   // ─── Memory query endpoint ──────────────────────────────────────────────
 
   async queryMemory(query: string): Promise<{ answer: string; context: string }> {
@@ -85,6 +100,33 @@ export class ImagesService {
       totalRelationships: relationships.length,
       relationshipBreakdown: this.groupBy(relationships, 'relation'),
     };
+  }
+
+  async searchImages(query: string) {
+    const queryEmbed = await this.vector.generateEmbedding(query);
+    const allImages = this.store.getAllImages();
+
+    const results = allImages
+      .filter((img) => img.embedding)
+      .map((img) => ({
+        ...img,
+        score: this.vector.cosineSimilarity(queryEmbed, img.embedding!),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    return results;
+  }
+
+  searchByText(text: string) {
+    const allImages = this.store.getAllImages();
+    const query = text.toLowerCase();
+
+    return allImages.filter(
+      (img) =>
+        img.analysis.ocrText?.toLowerCase().includes(query) ||
+        img.analysis.rawDescription.toLowerCase().includes(query),
+    );
   }
 
   private groupBy<T>(arr: T[], key: keyof T): Record<string, number> {

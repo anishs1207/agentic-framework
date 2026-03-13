@@ -24,6 +24,9 @@ export interface PipelineResult {
  *
  * Each stage is a discrete step, making it easy to swap out individual components.
  */
+import { VectorService } from './vector.service';
+import { EventService } from './event.service';
+
 @Injectable()
 export class ImagePipeline {
   private readonly logger = new Logger(ImagePipeline.name);
@@ -32,6 +35,8 @@ export class ImagePipeline {
     private readonly vlm: VlmService,
     private readonly personService: PersonService,
     private readonly store: ImageMemoryStore,
+    private readonly vector: VectorService,
+    private readonly eventService: EventService,
   ) {}
 
   async run(
@@ -68,6 +73,15 @@ export class ImagePipeline {
     const newPeopleCount = afterCount - beforeCount;
     const matchedPeopleCount = analysis.detectedPeople.length - newPeopleCount;
 
+    // Generate/Update embeddings for people
+    for (const [i, pId] of resolvedPersonIds.entries()) {
+      const person = updatedPeople[pId];
+      if (!person.embedding) {
+        this.logger.log(`[Pipeline] Generating embedding for person ${pId}`);
+        person.embedding = await this.vector.generateEmbedding(person.embedText);
+      }
+    }
+
     // Update person store
     this.store.setPeople(updatedPeople);
 
@@ -84,6 +98,11 @@ export class ImagePipeline {
 
     // ── Stage 4: Persist Image Record ─────────────────────────────────────
     this.logger.log(`[Pipeline] Stage 4: Persisting image record`);
+
+    // Generate image embedding based on analysis
+    const imageContentForEmbedding = `${analysis.scene}. ${analysis.rawDescription}. Tags: ${analysis.tags.join(', ')}. ${analysis.ocrText || ''}`;
+    const imageEmbedding = await this.vector.generateEmbedding(imageContentForEmbedding);
+
     const imageRecord: ImageRecord = {
       imageId,
       filename,
@@ -97,8 +116,15 @@ export class ImagePipeline {
         })),
       },
       detectedPersonIds: resolvedPersonIds,
+      embedding: imageEmbedding,
     };
     this.store.setImage(imageRecord);
+
+    // ── Stage 5: Re-cluster Events ─────────────────────────────────────────
+    this.logger.log(`[Pipeline] Stage 5: Re-clustering events`);
+    const allImages = this.store.getAllImages();
+    const clusters = this.eventService.clusterEvents(allImages);
+    this.store.setEvents(clusters);
 
     this.logger.log(
       `[Pipeline] DONE  imageId=${imageId} ` +

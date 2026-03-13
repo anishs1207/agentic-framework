@@ -50,6 +50,11 @@ export class PersonService {
         if (person.age && !existing.age) existing.age = person.age;
         if (person.gender && !existing.gender) existing.gender = person.gender;
 
+        if (person.mood) {
+          if (!existing.moodHistory) existing.moodHistory = [];
+          existing.moodHistory.push({ timestamp, mood: person.mood });
+        }
+
         resolvedPersonIds.push(matchId);
         this.logger.log(`Person matched to existing record ${matchId}`);
       } else {
@@ -65,6 +70,7 @@ export class PersonService {
           imageIds: [imageId],
           firstSeen: timestamp,
           lastSeen: timestamp,
+          moodHistory: person.mood ? [{ timestamp, mood: person.mood }] : [],
         };
         resolvedPersonIds.push(personId);
         this.logger.log(`New person created with id ${personId}`);

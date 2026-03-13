@@ -6,6 +6,9 @@ import { VlmService } from './vlm.service';
 import { PersonService } from './person.service';
 import { ImageMemoryStore } from './image-memory.store';
 
+import { VectorService } from './vector.service';
+import { EventService } from './event.service';
+
 @Module({
   controllers: [ImagesController, BackendController],
   providers: [
@@ -14,6 +17,8 @@ import { ImageMemoryStore } from './image-memory.store';
     VlmService,
     PersonService,
     ImageMemoryStore,
+    VectorService,
+    EventService,
   ],
   exports: [ImagesService, ImageMemoryStore],
 })

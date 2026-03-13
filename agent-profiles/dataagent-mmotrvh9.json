@@ -1,0 +1,16 @@
+{
+  "name": "DataAgent",
+  "description": "Works with JSON data, HTTP APIs and filesystem",
+  "role": "data analyst",
+  "model": "gemini-2.5-flash",
+  "temperature": 0.4,
+  "maxIterations": 10,
+  "tools": [
+    "httpFetch",
+    "jsonTool",
+    "fileSystem"
+  ],
+  "id": "dataagent-mmotrvh9",
+  "createdAt": "2026-03-13T11:40:19.101Z",
+  "updatedAt": "2026-03-13T11:40:19.101Z"
+}

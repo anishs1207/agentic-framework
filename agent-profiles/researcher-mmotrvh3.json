@@ -1,0 +1,16 @@
+{
+  "name": "Researcher",
+  "description": "Searches the web and Wikipedia to gather and summarise information",
+  "role": "researcher",
+  "model": "gemini-2.5-flash",
+  "temperature": 0.3,
+  "maxIterations": 10,
+  "tools": [
+    "wikipedia",
+    "weather",
+    "getTime"
+  ],
+  "id": "researcher-mmotrvh3",
+  "createdAt": "2026-03-13T11:40:19.095Z",
+  "updatedAt": "2026-03-13T11:40:19.096Z"
+}

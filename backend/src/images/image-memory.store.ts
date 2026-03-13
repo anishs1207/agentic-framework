@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MemoryStore, ImageRecord, PersonRecord, Relationship } from './image-memory.types';
+import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent } from './image-memory.types';
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'image-memory.json');
 
@@ -73,6 +73,17 @@ export class ImageMemoryStore {
     );
   }
 
+  // ─── Events ────────────────────────────────────────────────────────────────
+
+  setEvents(events: TimelineEvent[]): void {
+    this.store.events = events;
+    this.flush();
+  }
+
+  getAllEvents(): TimelineEvent[] {
+    return this.store.events || [];
+  }
+
   // ─── Persistence ───────────────────────────────────────────────────────────
 
   private load(): MemoryStore {
@@ -84,7 +95,7 @@ export class ImageMemoryStore {
     } catch (err) {
       this.logger.warn(`Could not load store from disk: ${err}`);
     }
-    return { images: {}, people: {}, relationships: [] };
+    return { images: {}, people: {}, relationships: [], events: [] };
   }
 
   private flush(): void {
@@ -139,7 +150,9 @@ export class ImageMemoryStore {
     for (const img of images) {
       lines.push(`--- Image: ${img.imageId.slice(0, 8)} (${img.filename}) ---`);
       lines.push(`  Scene: ${img.analysis.scene}`);
+      lines.push(`  Description: ${img.analysis.rawDescription}`);
       lines.push(`  Tags: ${img.analysis.tags.join(', ')}`);
+      if (img.analysis.ocrText) lines.push(`  Visible Text: ${img.analysis.ocrText}`);
       lines.push(`  People detected: ${img.detectedPersonIds.length}`);
       lines.push('');
     }

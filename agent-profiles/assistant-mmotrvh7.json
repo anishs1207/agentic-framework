@@ -1,0 +1,12 @@
+{
+  "name": "Assistant",
+  "description": "General-purpose helpful assistant with access to all tools",
+  "role": "general assistant",
+  "model": "gemini-2.5-flash",
+  "temperature": 0.7,
+  "maxIterations": 8,
+  "tools": [],
+  "id": "assistant-mmotrvh7",
+  "createdAt": "2026-03-13T11:40:19.099Z",
+  "updatedAt": "2026-03-13T11:40:19.099Z"
+}

@@ -5,6 +5,7 @@ export interface DetectedPerson {
   embedText: string;          // prose summary used for fuzzy matching
   age?: string;               // estimated age range e.g. "30-40"
   gender?: string;
+  mood?: string;              // detected emotional state
 }
 
 export interface Relationship {
@@ -22,6 +23,7 @@ export interface ImageRecord {
   uploadedAt: string;
   analysis: VlmAnalysis;
   detectedPersonIds: string[];
+  embedding?: number[];
 }
 
 export interface VlmAnalysis {
@@ -30,6 +32,8 @@ export interface VlmAnalysis {
   relationships: Relationship[];
   rawDescription: string;
   tags: string[];
+  ocrText?: string;
+  atmosphere?: string;        // overall vibe/mood of the photo
 }
 
 export interface PersonRecord {
@@ -42,10 +46,23 @@ export interface PersonRecord {
   imageIds: string[];         // all images this person appears in
   firstSeen: string;
   lastSeen: string;
+  embedding?: number[];
+  moodHistory?: { timestamp: string; mood: string }[];
+}
+
+export interface TimelineEvent {
+  eventId: string;
+  name: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  imageIds: string[];
+  personIds: string[];
 }
 
 export interface MemoryStore {
   images: Record<string, ImageRecord>;
   people: Record<string, PersonRecord>;
   relationships: Relationship[];
+  events: TimelineEvent[];
 }

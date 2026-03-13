@@ -1,0 +1,16 @@
+{
+  "name": "Calculator",
+  "description": "Specialises in maths, unit conversion and currency",
+  "role": "maths specialist",
+  "model": "gemini-2.5-flash",
+  "temperature": 0.1,
+  "maxIterations": 6,
+  "tools": [
+    "calculator",
+    "unitConverter",
+    "currencyConverter"
+  ],
+  "id": "calculator-mmotrvh6",
+  "createdAt": "2026-03-13T11:40:19.098Z",
+  "updatedAt": "2026-03-13T11:40:19.098Z"
+}

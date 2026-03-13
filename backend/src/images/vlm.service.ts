@@ -43,15 +43,18 @@ Return ONLY valid JSON, no markdown, no extra text:
 
 {
   "scene": "brief scene description",
+  "atmosphere": "e.g. festive, productive, tense, cozy, formal",
   "rawDescription": "detailed paragraph about the image",
   "tags": ["tag1", "tag2"],
+  "ocrText": "raw text extracted from any signs, documents, or labels in the image",
   "detectedPeople": [
     {
       "name": "unknown or inferred name if visible e.g. on a badge",
       "descriptors": ["tall", "dark hair", "blue shirt", "glasses"],
       "embedText": "A tall person in their 30s wearing a blue shirt and glasses, with dark curly hair",
       "age": "30-40",
-      "gender": "male"
+      "gender": "male",
+      "mood": "e.g. happy, curious, bored, angry"
     }
   ],
   "relationships": [
@@ -66,6 +69,9 @@ Return ONLY valid JSON, no markdown, no extra text:
 }
 
 Guidelines:
+- mood should be a single word or short phrase describing the person's expression/emotion.
+- atmosphere should describe the overall vibe of the image.
+- ocrText should include any visible text, even if small
 - person1Index and person2Index refer to array indices in detectedPeople
 - Relations can be: father, mother, son, daughter, sibling, brother, sister, grandfather, grandmother, husband, wife, partner, friend, colleague, or unknown
 - If no people are visible, return empty arrays
@@ -98,6 +104,7 @@ Guidelines:
           embedText: p.embedText || '',
           age: p.age || undefined,
           gender: p.gender || undefined,
+          mood: p.mood || undefined,
         }),
       );
 
@@ -113,8 +120,10 @@ Guidelines:
 
       return {
         scene: raw.scene || '',
+        atmosphere: raw.atmosphere || '',
         rawDescription: raw.rawDescription || '',
         tags: raw.tags || [],
+        ocrText: raw.ocrText || '',
         detectedPeople: people,
         relationships: relationships as any, // resolved by PersonService
       };

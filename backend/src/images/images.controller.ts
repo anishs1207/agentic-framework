@@ -121,6 +121,30 @@ export class ImagesController {
   getRelationshipsForPerson(@Param('personId') personId: string) {
     return this.imagesService.getRelationshipsForPerson(personId);
   }
+
+  @Get('events/all')
+  getAllEvents() {
+    return this.imagesService.getAllEvents();
+  }
+
+  @Get('people/:personId/mood-history')
+  getMoodHistory(@Param('personId') personId: string) {
+    return this.imagesService.getMoodHistory(personId);
+  }
+
+  // ── Search ───────────────────────────────────────────────────────────────
+
+  @Get('search')
+  async searchImages(@Body('query') query: string) {
+    if (!query) throw new BadRequestException('query is required');
+    return this.imagesService.searchImages(query);
+  }
+
+  @Get('search-by-text')
+  async searchByText(@Body('text') text: string) {
+    if (!text) throw new BadRequestException('text is required');
+    return this.imagesService.searchByText(text);
+  }
 }
 
 /**

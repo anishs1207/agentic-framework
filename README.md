@@ -2,6 +2,9 @@
 
 > A powerful, extensible agentic framework built in TypeScript — multi-agent orchestration, cron scheduling, tool plugins, session persistence, and a rich terminal UI. Powered by **Google Gemini**.
 
+![alt text](image.png)
+
+
 ```
   ___  __ _ ___ _ __  | |_(_) |______ | |
  / _ \/ _` / _ \ '_ \| __| | / / __| | |
@@ -12,6 +15,7 @@
   v2.0  •  Powered by Gemini  •  ReAct • Tools • Memory
   Multi-Agent Swarms  •  Cron Scheduler  •  WhatsApp & Telegram
 ```
+
 
 ---
 
