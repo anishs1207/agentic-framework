@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { VlmService } from './vlm.service';
 import { PersonService } from './person.service';
 import { ImageMemoryStore } from './image-memory.store';
-import { ImageRecord } from './image-memory.types';
+import { ImageRecord } from './types/image-memory.types';
 
 export interface PipelineResult {
   imageId: string;

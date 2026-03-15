@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from './app.module';
@@ -6,7 +6,7 @@ import { join } from 'path';
 import { json, urlencoded, static as expressStatic } from 'express';
 
 dotenv.config({
-  path: "./.env"
+  path: "../.env"
 })
 
 async function bootstrap() {

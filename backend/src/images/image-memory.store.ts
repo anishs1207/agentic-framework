@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent } from './image-memory.types';
+import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent } from './types/image-memory.types';
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'image-memory.json');
 

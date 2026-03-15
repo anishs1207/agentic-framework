@@ -8,14 +8,14 @@ datasource db {
 }
 
 model Image {
-  id             String         @id @default(uuid())
+  id             String        @id @default(uuid())
   filename       String
   storagePath    String
-  uploadedAt     DateTime       @default(now())
+  uploadedAt     DateTime      @default(now())
   scene          String
   rawDescription String
   tags           String[]
-  ocrText        String?        @default("")
+  ocrText        String?       @default("")
   detectedPeople ImagePerson[]
 }
 
@@ -54,7 +54,8 @@ model Relationship {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id       String @id @default(uuid())
+  email    String @unique
+  name     String
+  password String
 }

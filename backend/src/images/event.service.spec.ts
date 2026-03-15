@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventService } from './event.service';
-import { ImageRecord } from './image-memory.types';
+import { ImageRecord } from './types/image-memory.types';
 
 describe('EventService', () => {
   let service: EventService;

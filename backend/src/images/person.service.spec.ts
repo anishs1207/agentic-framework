@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PersonService } from './person.service';
-import { DetectedPerson, PersonRecord } from './image-memory.types';
+import { DetectedPerson, PersonRecord } from './types/image-memory.types';
 
 describe('PersonService', () => {
   let service: PersonService;

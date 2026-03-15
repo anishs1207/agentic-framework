@@ -6,7 +6,7 @@ import {
   VlmAnalysis,
   DetectedPerson,
   Relationship,
-} from './image-memory.types';
+} from './types/image-memory.types';
 
 /**
  * VlmService wraps the Google Gemini Vision API (gemini-1.5-flash).

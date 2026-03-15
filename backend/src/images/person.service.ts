@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { PersonRecord, DetectedPerson, Relationship } from './image-memory.types';
+import { PersonRecord, DetectedPerson, Relationship } from './types/image-memory.types';
 
 /**
  * PersonService handles cross-image person identity resolution.

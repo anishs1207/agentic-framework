@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ImageMemoryStore } from './image-memory.store';
 import { ImagePipeline } from './image.pipeline';
 import { VlmService } from './vlm.service';
-import { ImageRecord, PersonRecord, Relationship } from './image-memory.types';
+import { ImageRecord, PersonRecord, Relationship } from './types/image-memory.types';
 import * as fs from 'fs';
 
 import { VectorService } from './vector.service';
