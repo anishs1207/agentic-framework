@@ -1,23 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 @Injectable()
 export class VectorService {
   private readonly logger = new Logger(VectorService.name);
-  private readonly genAI: GoogleGenerativeAI;
-  private readonly model;
+  private readonly client: GoogleGenAI;
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    this.client = new GoogleGenAI({ apiKey });
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const result = await this.model.embedContent(text);
-      return result.embedding.values;
+      const response = await this.client.models.embedContent({
+        model: 'gemini-embedding-001',
+        contents: [{ role: 'user', parts: [{ text }] }],
+      });
+      return response.embeddings[0].values;
     } catch (err) {
       this.logger.error(`Failed to generate embedding: ${err.message}`);
       return [];

@@ -99,8 +99,18 @@ export class ImagePipeline {
     // ── Stage 4: Persist Image Record ─────────────────────────────────────
     this.logger.log(`[Pipeline] Stage 4: Persisting image record`);
 
-    // Generate image embedding based on analysis
-    const imageContentForEmbedding = `${analysis.scene}. ${analysis.rawDescription}. Tags: ${analysis.tags.join(', ')}. ${analysis.ocrText || ''}`;
+    // Generate image embedding based on analysis (Google Photos style: context + people + atmosphere)
+    const activePeopleStr = analysis.detectedPeople
+      .map((p) => `${p.name || 'A person'} (${p.descriptors.join(', ')})`)
+      .join('; ');
+    
+    const imageContentForEmbedding = `Scene: ${analysis.scene}. 
+      Atmosphere: ${analysis.atmosphere}. 
+      Description: ${analysis.rawDescription}. 
+      People: ${activePeopleStr}. 
+      Text found: ${analysis.ocrText || 'None'}. 
+      Tags: ${analysis.tags.join(', ')}`;
+    
     const imageEmbedding = await this.vector.generateEmbedding(imageContentForEmbedding);
 
     const imageRecord: ImageRecord = {

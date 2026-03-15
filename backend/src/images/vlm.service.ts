@@ -9,7 +9,7 @@ import {
 } from './types/image-memory.types';
 
 /**
- * VlmService wraps the Google Gemini Vision API (gemini-1.5-flash).
+ * VlmService wraps the Google Gemini Vision API (gemini-2.5-flash).
  * It is responsible for analysing a single image and returning
  * structured information about the people visible and their relationships.
  */
@@ -23,7 +23,7 @@ export class VlmService {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   /**
