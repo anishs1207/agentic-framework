@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent } from './types/image-memory.types';
+import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent, JournalEntry } from './types/image-memory.types';
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'image-memory.json');
 
@@ -35,6 +35,10 @@ export class ImageMemoryStore {
 
   getAllImages(): ImageRecord[] {
     return Object.values(this.store.images);
+  }
+
+  getImagesStore(): Record<string, ImageRecord> {
+    return this.store.images;
   }
 
   // ─── People records ────────────────────────────────────────────────────────
@@ -95,7 +99,18 @@ export class ImageMemoryStore {
     } catch (err) {
       this.logger.warn(`Could not load store from disk: ${err}`);
     }
-    return { images: {}, people: {}, relationships: [], events: [] };
+    return { images: {}, people: {}, relationships: [], events: [], journals: [] };
+  }
+
+  // ─── Journals ──────────────────────────────────────────────────────────────
+  
+  setJournals(journals: JournalEntry[]): void {
+    this.store.journals = journals;
+    this.flush();
+  }
+
+  getAllJournals(): JournalEntry[] {
+    return this.store.journals || [];
   }
 
   private flush(): void {
@@ -163,7 +178,7 @@ export class ImageMemoryStore {
    * Clear all data from the store and disk.
    */
   clear(): void {
-    this.store = { images: {}, people: {}, relationships: [], events: [] };
+    this.store = { images: {}, people: {}, relationships: [], events: [], journals: [] };
     this.flush();
     this.logger.log('Memory store cleared.');
   }

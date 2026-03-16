@@ -13,13 +13,15 @@ interface PersonCardProps {
     canonicalDescriptors: string[];
     imageIds: string[];
     embedText: string;
+    biography?: string;
   };
   relationships?: any[];
   people?: any[];
   onRename?: () => void;
+  onClick?: () => void;
 }
 
-const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], people = [], onRename }) => {
+const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], people = [], onRename, onClick }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [newName, setNewName] = React.useState(person.name || '');
   const [isSaving, setIsSaving] = React.useState(false);
@@ -61,7 +63,11 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], peo
   };
 
   return (
-    <div className="glass glass-hover animate-fade-in" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', position: 'relative' }}>
+    <div 
+      className="glass glass-hover animate-fade-in" 
+      style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', position: 'relative', cursor: onClick ? 'pointer' : 'default' }}
+      onClick={onClick}
+    >
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <div style={{ 
           width: '80px', 
@@ -159,7 +165,7 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], peo
         borderRadius: '8px',
         border: '1px solid rgba(255, 255, 255, 0.03)'
       }}>
-        {person.embedText}
+        {person.biography || person.embedText}
       </p>
 
       {myRelationships.length > 0 && (

@@ -8,30 +8,40 @@ import ImageCard from '@/components/ImageCard';
 import PersonCard from '@/components/PersonCard';
 import RelationshipSection from '@/components/RelationshipSection';
 import EventTimeline from '@/components/EventTimeline';
-import { getAllImages, getAllPeople, getAllRelationships, getAllEvents, resetAllData } from '@/lib/api';
+import SearchSection from '@/components/SearchSection';
+import NetworkGraph from '@/components/NetworkGraph';
+import MergePeopleSection from '@/components/MergePeopleSection';
+import JournalSection from '@/components/JournalSection';
+import MapView from '@/components/MapView';
+import { getAllImages, getAllPeople, getAllRelationships, getAllEvents, getJournals, resetAllData } from '@/lib/api';
 
 export default function Home() {
   const [images, setImages] = useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]);
   const [relationships, setRelationships] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [currentTab, setCurrentTab] = useState<'gallery' | 'people' | 'relationships' | 'timeline'>('gallery');
+  const [journals, setJournals] = useState<any[]>([]);
+  const [currentTab, setCurrentTab] = useState<'gallery' | 'people' | 'relationships' | 'timeline' | 'journal' | 'map'>('gallery');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterPersonId, setFilterPersonId] = useState<string | null>(null);
+  const [filterLocation, setFilterLocation] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [imageData, peopleData, relData, eventData] = await Promise.all([
+      const [imageData, peopleData, relData, eventData, journalData] = await Promise.all([
         getAllImages(),
         getAllPeople(),
         getAllRelationships(),
-        getAllEvents()
+        getAllEvents(),
+        getJournals()
       ]);
       setImages(imageData || []);
       setPeople(peopleData || []);
       setRelationships(relData || []);
       setEvents(eventData || []);
+      setJournals(journalData || []);
       setError(null);
     } catch (err: any) {
       console.error('Failed to fetch data:', err);
@@ -39,6 +49,21 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const availableLocations = Array.from(new Set(
+    images.map(img => img.analysis?.locationContext).filter(Boolean)
+  )) as string[];
+
+  const filteredImages = images.filter(img => {
+    const matchesPerson = filterPersonId ? img.detectedPersonIds?.includes(filterPersonId) : true;
+    const matchesLocation = filterLocation ? img.analysis?.locationContext === filterLocation : true;
+    return matchesPerson && matchesLocation;
+  });
+
+  const handlePersonClick = (personId: string) => {
+    setFilterPersonId(personId);
+    setCurrentTab('gallery');
   };
 
   const handleReset = async () => {
@@ -57,6 +82,16 @@ export default function Home() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (images.length > 0) {
+      // Use the dominant color of the most recent image for vibrant theming
+      const recentImage = images[images.length - 1];
+      if (recentImage.dominantColor) {
+        document.documentElement.style.setProperty('--theme-accent', recentImage.dominantColor);
+      }
+    }
+  }, [images]);
 
   return (
     <main style={{ minHeight: '100vh', padding: '2rem 1rem max(5vw, 2rem)' }}>
@@ -88,11 +123,13 @@ export default function Home() {
         
         <UploadSection onUploadSuccess={fetchData} />
         
+        <SearchSection people={people} />
+        
         <QuerySection />
         
         <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {['gallery', 'people', 'relationships', 'timeline'].map((tab) => (
+            {['gallery', 'people', 'relationships', 'timeline', 'journal', 'map'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setCurrentTab(tab as any)}
@@ -161,23 +198,77 @@ export default function Home() {
         ) : (
           <>
             {currentTab === 'gallery' && (
-              images.length === 0 ? (
-                <div className="glass" style={{ padding: '5rem', textAlign: 'center' }}>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '1.125rem' }}>
-                    No images found. Upload your first image to begin building your visual memory!
-                  </p>
-                </div>
-              ) : (
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-                  gap: '2rem' 
-                }}>
-                  {images.map((image) => (
-                    <ImageCard key={image.imageId} image={image} people={people} />
+              <>
+                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>FILTER BY LOCATION:</span>
+                  <button 
+                    onClick={() => setFilterLocation(null)}
+                    className={!filterLocation ? 'tab-active' : 'tab-inactive'}
+                    style={{ padding: '0.4rem 1rem', borderRadius: '100px', fontSize: '0.75rem', border: '1px solid var(--glass-border)' }}
+                  >
+                    All Places
+                  </button>
+                  {availableLocations.map(loc => (
+                    <button 
+                      key={loc}
+                      onClick={() => setFilterLocation(loc)}
+                      className={filterLocation === loc ? 'tab-active' : 'tab-inactive'}
+                      style={{ padding: '0.4rem 1rem', borderRadius: '100px', fontSize: '0.75rem', border: '1px solid var(--glass-border)' }}
+                    >
+                      {loc}
+                    </button>
                   ))}
                 </div>
-              )
+
+                {(filterPersonId || filterLocation) && (
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem', 
+                    marginBottom: '1.5rem',
+                    padding: '0.75rem 1.25rem',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    animation: 'fadeIn 0.3s'
+                  }}>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                      Active Filters: {filterPersonId && <strong>@{people.find(p => p.personId === filterPersonId)?.name || 'Person'} </strong>}
+                      {filterLocation && <strong>📍{filterLocation}</strong>}
+                    </span>
+                    <button 
+                      onClick={() => { setFilterPersonId(null); setFilterLocation(null); }}
+                      style={{ 
+                        marginLeft: 'auto',
+                        color: 'var(--accent-primary)', 
+                        fontSize: '0.75rem', 
+                        fontWeight: '700',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      ✕ Reset All
+                    </button>
+                  </div>
+                )}
+                {filteredImages.length === 0 ? (
+                  <div className="glass" style={{ padding: '5rem', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.125rem' }}>
+                      No images found {filterPersonId ? 'for this person' : ''}.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                    gap: '2rem' 
+                  }}>
+                    {filteredImages.map((image) => (
+                      <ImageCard key={image.imageId} image={image} people={people} />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {currentTab === 'people' && (
@@ -188,24 +279,45 @@ export default function Home() {
                   </p>
                 </div>
               ) : (
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                  gap: '1.5rem' 
-                }}>
-                  {people.map((person) => (
-                    <PersonCard key={person.personId} person={person} relationships={relationships} people={people} onRename={fetchData} />
-                  ))}
-                </div>
+                <>
+                  <MergePeopleSection people={people} onSuccess={fetchData} />
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                    gap: '1.5rem' 
+                  }}>
+                    {people.map((person) => (
+                      <PersonCard 
+                        key={person.personId} 
+                        person={person} 
+                        relationships={relationships} 
+                        people={people} 
+                        onRename={fetchData} 
+                        onClick={() => handlePersonClick(person.personId)}
+                      />
+                    ))}
+                  </div>
+                </>
               )
             )}
 
             {currentTab === 'relationships' && (
-              <RelationshipSection relationships={relationships} people={people} />
+              <>
+                <NetworkGraph people={people} relationships={relationships} />
+                <RelationshipSection relationships={relationships} people={people} />
+              </>
             )}
 
             {currentTab === 'timeline' && (
               <EventTimeline events={events} />
+            )}
+
+            {currentTab === 'journal' && (
+              <JournalSection journals={journals} onRefresh={fetchData} />
+            )}
+
+            {currentTab === 'map' && (
+              <MapView images={images} />
             )}
           </>
         )}

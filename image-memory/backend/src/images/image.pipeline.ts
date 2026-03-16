@@ -27,6 +27,7 @@ export interface PipelineResult {
 import { VectorService } from './vector.service';
 import { EventService } from './event.service';
 import { ImageProcessingService } from './image-processing.service';
+import exifr from 'exifr';
 
 @Injectable()
 export class ImagePipeline {
@@ -64,7 +65,7 @@ export class ImagePipeline {
     const beforeCount = Object.keys(existingPeople).length;
 
     const { updatedPeople, resolvedPersonIds } =
-      this.personService.resolvePeople(
+      await this.personService.resolvePeople(
         analysis.detectedPeople,
         existingPeople,
         imageId,
@@ -110,6 +111,15 @@ export class ImagePipeline {
       }
     }
 
+    // ── Stage 2.5: Regenerate Biographies ───────────────────────────────
+    this.logger.log(`[Pipeline] Stage 2.5: Regenerating biographies`);
+    const allImagesForBio = this.store.getImagesStore();
+    for (const pId of resolvedPersonIds) {
+      const person = updatedPeople[pId];
+      // Only regenerate if bios are enabled and we have at least 1 image
+      person.biography = await this.personService.generateBiography(person, allImagesForBio);
+    }
+
     // Update person store
     this.store.setPeople(updatedPeople);
 
@@ -126,6 +136,18 @@ export class ImagePipeline {
 
     // ── Stage 4: Persist Image Record ─────────────────────────────────────
     this.logger.log(`[Pipeline] Stage 4: Persisting image record`);
+
+    // Extract EXIF GPS data
+    let gps: { lat: number; lng: number } | undefined = undefined;
+    try {
+      const exif = await exifr.gps(filePath);
+      if (exif) {
+        gps = { lat: exif.latitude, lng: exif.longitude };
+        this.logger.log(`[Pipeline] Extracted GPS: ${gps.lat}, ${gps.lng}`);
+      }
+    } catch (e) {
+      this.logger.warn(`[Pipeline] GPS extraction failed: ${e.message}`);
+    }
 
     // Generate image embedding based on analysis (Google Photos style: context + people + atmosphere)
     const activePeopleStr = analysis.detectedPeople
@@ -156,6 +178,8 @@ export class ImagePipeline {
       detectedPersonIds: resolvedPersonIds,
       embedding: imageEmbedding,
       caption: analysis.scene,
+      dominantColor: analysis.dominantColor,
+      gps,
     };
     this.store.setImage(imageRecord);
 
@@ -164,6 +188,11 @@ export class ImagePipeline {
     const allImages = this.store.getAllImages();
     const clusters = this.eventService.clusterEvents(allImages);
     this.store.setEvents(clusters);
+
+    // predictive relationships
+    const currentRels = this.store.getAllRelationships();
+    const predictedRels = this.personService.predictRelationships(allImages, currentRels);
+    this.store.setRelationships(predictedRels);
 
     this.logger.log(
       `[Pipeline] DONE  imageId=${imageId} ` +

@@ -26,6 +26,8 @@ export interface ImageRecord {
   detectedPersonIds: string[];
   embedding?: number[];
   caption?: string;
+  gps?: { lat: number; lng: number };
+  dominantColor?: string; // Hex code for vibrant theming
 }
 
 export interface VlmAnalysis {
@@ -36,12 +38,15 @@ export interface VlmAnalysis {
   tags: string[];
   ocrText?: string;
   atmosphere?: string;        // overall vibe/mood of the photo
+  locationContext?: string;   // e.g. "Indoors", "Nature", "Urban"
+  dominantColor?: string;     // Hex code e.g. "#3b82f6"
 }
 
 export interface PersonRecord {
   personId: string;
   canonicalDescriptors: string[];
   embedText: string;
+  biography?: string;        // Auto-generated life story
   name?: string;
   age?: string;
   gender?: string;
@@ -63,9 +68,19 @@ export interface TimelineEvent {
   personIds: string[];
 }
 
+export interface JournalEntry {
+  entryId: string;
+  date: string;
+  title: string;
+  summary: string;
+  imageIds: string[];
+  mood: string;
+}
+
 export interface MemoryStore {
   images: Record<string, ImageRecord>;
   people: Record<string, PersonRecord>;
   relationships: Relationship[];
   events: TimelineEvent[];
+  journals: JournalEntry[];
 }

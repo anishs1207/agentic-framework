@@ -9,8 +9,18 @@ import { ImageMemoryStore } from './image-memory.store';
 import { VectorService } from './vector.service';
 import { EventService } from './event.service';
 import { ImageProcessingService } from './image-processing.service';
+import { BullModule } from '@nestjs/bullmq';
+
+import { ImageProcessor } from './image-processor';
+import { JournalService } from './journal.service';
+import { PredictionService } from './prediction.service';
 
 @Module({
+  imports: [
+    BullModule.registerQueue({
+      name: 'image-processing',
+    }),
+  ],
   controllers: [ImagesController, BackendController],
   providers: [
     ImagesService,
@@ -21,6 +31,9 @@ import { ImageProcessingService } from './image-processing.service';
     VectorService,
     EventService,
     ImageProcessingService,
+    ImageProcessor,
+    JournalService,
+    PredictionService,
   ],
   exports: [ImagesService, ImageMemoryStore],
 })

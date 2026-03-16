@@ -23,7 +23,7 @@ export class VlmService {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   /**
@@ -44,6 +44,8 @@ Return ONLY valid JSON, no markdown, no extra text:
 {
   "scene": "brief scene description",
   "atmosphere": "e.g. festive, productive, tense, cozy, formal",
+  "locationContext": "one of: Indoors, Outdoors, Nature, Urban, Home, Work, Public Space, Unknown",
+  "dominantColor": "#hexcode representing the most vibrant/characteristic color of the scene",
   "rawDescription": "detailed paragraph about the image",
   "tags": ["tag1", "tag2"],
   "ocrText": "raw text extracted from any signs, documents, or labels in the image",
@@ -119,6 +121,8 @@ Guidelines:
       return {
         scene: raw.scene || '',
         atmosphere: raw.atmosphere || '',
+        locationContext: raw.locationContext || 'Unknown',
+        dominantColor: raw.dominantColor || '#3b82f6',
         rawDescription: raw.rawDescription || '',
         tags: raw.tags || [],
         ocrText: raw.ocrText || '',

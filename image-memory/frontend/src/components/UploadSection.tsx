@@ -13,16 +13,19 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
-      await uploadImage(file);
+      const uploadPromises = Array.from(files).map(file => uploadImage(file));
+      await Promise.all(uploadPromises);
+      
       onUploadSuccess();
       if (fileInputRef.current) fileInputRef.current.value = '';
+      alert(`${files.length} images have been queued for background processing.`);
     } catch (err: any) {
       console.error('Upload failed:', err);
       setError(err.response?.data?.message || 'Upload failed. Please try again.');
@@ -42,6 +45,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onUploadSuccess }) => {
         <input 
           type="file" 
           accept="image/*" 
+          multiple
           onChange={handleFileChange}
           style={{ display: 'none' }}
           ref={fileInputRef}

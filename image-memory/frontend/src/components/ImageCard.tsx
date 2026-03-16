@@ -21,10 +21,15 @@ interface ImageCardProps {
 }
 
 const ImageCard: React.FC<ImageCardProps> = ({ image, people = [], onClick }) => {
+  const [isPrivacyMode, setIsPrivacyMode] = React.useState(false);
   const analysis = image.analysis || {};
   const description = analysis.rawDescription || "No description available";
   const tags = analysis.tags || [];
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+  const currentImageUrl = isPrivacyMode 
+    ? `${API_BASE_URL}/images/${image.imageId}/privacy` 
+    : getImageUrl(image.imageId);
 
   const getPersonProfile = (personId: string) => {
     const person = people.find(p => p.personId === personId);
@@ -43,13 +48,14 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, people = [], onClick }) =>
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        position: 'relative'
+        position: 'relative',
+        border: isPrivacyMode ? '1px solid var(--accent-primary)' : '1px solid var(--glass-border)'
       }}
       onClick={onClick}
     >
       <div style={{ position: 'relative', width: '100%', paddingTop: '66.6%' }}>
         <img 
-          src={getImageUrl(image.imageId)} 
+          src={currentImageUrl} 
           alt={description}
           style={{ 
             position: 'absolute',
@@ -57,9 +63,36 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, people = [], onClick }) =>
             left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
+            transition: 'filter 0.3s ease'
           }}
         />
+
+        {/* Privacy Toggle */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsPrivacyMode(!isPrivacyMode); }}
+          title={isPrivacyMode ? 'Disable Privacy Mode' : 'Enable Privacy Mode (Blur Strangers)'}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            zIndex: 10,
+            backgroundColor: isPrivacyMode ? 'var(--accent-primary)' : 'rgba(0,0,0,0.5)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            cursor: 'pointer',
+            backdropFilter: 'blur(4px)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          {isPrivacyMode ? '🛡️' : '👤'}
+        </button>
         
         {/* Person Avatars Overlay */}
         <div style={{ 
@@ -132,6 +165,20 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, people = [], onClick }) =>
           {description}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: 'auto' }}>
+          {analysis.locationContext && (
+            <span 
+              style={{ 
+                fontSize: '0.7rem', 
+                padding: '2px 8px', 
+                backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                color: 'var(--text-secondary)',
+                borderRadius: '100px',
+                border: '1px solid var(--glass-border)'
+              }}
+            >
+              📍 {analysis.locationContext}
+            </span>
+          )}
           {tags.slice(0, 3).map((tag: string, i: number) => (
             <span 
               key={i} 

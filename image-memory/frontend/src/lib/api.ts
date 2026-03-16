@@ -66,4 +66,48 @@ export const renamePerson = async (personId: string, name: string) => {
   return response.data;
 };
 
+export const searchImages = async (query: string) => {
+  const response = await api.get(`/images/search?q=${encodeURIComponent(query)}`);
+  return response.data;
+};
+
+export const searchByText = async (query: string) => {
+  const response = await api.get(`/images/search-by-text?q=${encodeURIComponent(query)}`);
+  return response.data;
+};
+
+export const mergePeople = async (targetId: string, sourceId: string) => {
+  const response = await api.post('/images/people/merge', { targetId, sourceId });
+  return response.data;
+};
+
+export const getGeographicImages = async () => {
+  const response = await api.get('/images/geo/all');
+  return response.data;
+};
+
+export const getJournals = async () => {
+  const response = await api.get('/images/journals/all');
+  return response.data;
+};
+
+export const generateJournal = async (date: string) => {
+  const response = await api.post('/images/journals/generate', { date });
+  return response.data;
+};
+
+export const searchByImage = async (file: File) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post('/images/search-by-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
+
+export const getPredictions = async () => {
+  const response = await api.get('/images/predictions');
+  return response.data;
+};
+
 export default api;

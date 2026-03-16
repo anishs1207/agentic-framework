@@ -86,6 +86,13 @@ export class ImagesController {
     return this.imagesService.getStats();
   }
 
+  @Post('search-by-image')
+  @UseInterceptors(FileInterceptor('image'))
+  async searchByImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Image file is required');
+    return this.imagesService.searchByImage(file);
+  }
+
   @Get(':id')
   getImage(@Param('id') id: string) {
     return this.imagesService.getImage(id);
@@ -97,6 +104,27 @@ export class ImagesController {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     const stream = fs.createReadStream(filePath);
     stream.pipe(res as any);
+  }
+
+  @Get(':id/privacy')
+  async streamBlurred(@Param('id') id: string, @Res() res: Response) {
+    const { path: filePath } = this.imagesService.getImageFile(id);
+    const img = this.imagesService.getImage(id);
+    
+    // Privacy Logic: find people with no name or name "unknown"
+    const strangers = img.analysis.detectedPeople
+      .filter(p => !p.name || p.name.toLowerCase() === 'unknown')
+      .map(p => p.boundingBox)
+      .filter(Boolean) as [number, number, number, number][];
+
+    if (strangers.length === 0) {
+      const stream = fs.createReadStream(filePath);
+      return stream.pipe(res as any);
+    }
+
+    const blurredBuffer = await this.imagesService.blurStrangers(id, strangers);
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.end(blurredBuffer);
   }
 
   // ── People ───────────────────────────────────────────────────────────────
@@ -116,6 +144,13 @@ export class ImagesController {
   renamePerson(@Param('personId') personId: string, @Body('name') name: string) {
     if (!name) throw new BadRequestException('Name is required');
     return this.imagesService.updatePersonName(personId, name);
+  }
+
+  @Post('people/merge')
+  @HttpCode(HttpStatus.OK)
+  mergePeople(@Body('targetId') targetId: string, @Body('sourceId') sourceId: string) {
+    if (!targetId || !sourceId) throw new BadRequestException('targetId and sourceId are required');
+    return this.imagesService.mergePeople(targetId, sourceId);
   }
 
   // ── Relationships ─────────────────────────────────────────────────────────
@@ -143,20 +178,41 @@ export class ImagesController {
   // ── Search ───────────────────────────────────────────────────────────────
 
   @Get('search')
-  async searchImages(@Body('query') query: string) {
-    if (!query) throw new BadRequestException('query is required');
+  async searchImages(@Query('q') query: string) {
+    if (!query) throw new BadRequestException('q query param is required');
     return this.imagesService.searchImages(query);
   }
 
   @Get('search-by-text')
-  async searchByText(@Body('text') text: string) {
-    if (!text) throw new BadRequestException('text is required');
+  async searchByText(@Query('q') text: string) {
+    if (!text) throw new BadRequestException('q query param is required');
     return this.imagesService.searchByText(text);
   }
 
   @Get('timeline/events')
   getTimeline() {
     return this.imagesService.getTimeline();
+  }
+
+  @Get('geo/all')
+  getGeographic() {
+    return this.imagesService.getGeographicImages();
+  }
+
+  @Get('journals/all')
+  getJournals() {
+    return this.imagesService.getJournals();
+  }
+
+  @Post('journals/generate')
+  generateJournal(@Body('date') date: string) {
+    if (!date) throw new BadRequestException('date field is required');
+    return this.imagesService.generateJournalForDate(date);
+  }
+
+  @Get('predictions')
+  getPredictions() {
+    return this.imagesService.getPredictions();
   }
 
   @Get('filter')

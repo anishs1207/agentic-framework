@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { ImageMemoryStore } from './image-memory.store';
 import { ImagePipeline } from './image.pipeline';
 import { VlmService } from './vlm.service';
@@ -7,22 +7,60 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { VectorService } from './vector.service';
+import { ImageProcessingService } from './image-processing.service';
+import { JournalService } from './journal.service';
+import { PredictionService } from './prediction.service';
+
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class ImagesService {
+  private readonly logger = new Logger(ImagesService.name);
+
   constructor(
     private readonly store: ImageMemoryStore,
     private readonly pipeline: ImagePipeline,
     private readonly vlm: VlmService,
     private readonly vector: VectorService,
+    private readonly imageProcessing: ImageProcessingService,
+    private readonly journalService: JournalService,
+    private readonly predictionService: PredictionService,
+    @InjectQueue('image-processing') private readonly imageQueue: Queue,
   ) {}
 
   /**
    * Process a newly uploaded image through the full pipeline.
+   * Now uses a background queue for resilience and bulk support.
    */
   async ingestImage(file: Express.Multer.File) {
-    const result = await this.pipeline.run(file.path, file.originalname);
-    return result;
+    try {
+      await this.imageQueue.add('analyze', {
+        filePath: file.path,
+        filename: file.originalname,
+      }, {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      });
+
+      return { 
+        message: 'Image queued for processing',
+        filename: file.originalname,
+        status: 'queued'
+      };
+    } catch (err) {
+      this.logger.error('Redis connection failed, processing image synchronously as fallback', err);
+      // Fallback: process immediately if queue is dead
+      this.pipeline.run(file.path, file.originalname);
+      return {
+        message: 'Processing image synchronously (Background queue unavailable)',
+        filename: file.originalname,
+        status: 'processing'
+      };
+    }
   }
 
   // ─── Image endpoints ────────────────────────────────────────────────────
@@ -243,6 +281,130 @@ export class ImagesService {
     cleanDir(cropsDir);
     
     return { message: 'All memory data and files have been cleared.' };
+  }
+
+  async blurStrangers(imageId: string, regions: [number, number, number, number][]): Promise<Buffer> {
+    const { path: filePath } = this.getImageFile(imageId);
+    return this.imageProcessing.blurRegions(filePath, regions);
+  }
+
+  getGeographicImages() {
+    return this.store.getAllImages().filter(img => img.gps);
+  }
+
+  getJournals() {
+    return this.store.getAllJournals();
+  }
+
+  async searchByImage(file: Express.Multer.File) {
+    this.logger.log(`[Search] Visual search started for file: ${file.originalname}`);
+    const analysis = await this.vlm.analyseImage(file.path);
+    
+    if (analysis.detectedPeople.length === 0) {
+      return { message: 'No people detected in this image to search for.', matches: [] };
+    }
+
+    const peopleStore = this.store.getPeopleStore();
+    const results = [];
+
+    for (const detected of analysis.detectedPeople) {
+      const embedding = await this.vector.generateEmbedding(detected.embedText);
+      
+      let bestMatch = null;
+      let highestScore = 0;
+
+      for (const [pId, record] of Object.entries(peopleStore)) {
+        if (!record.embedding) continue;
+        const score = this.vector.cosineSimilarity(embedding, record.embedding);
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = { person: record, score };
+        }
+      }
+
+      if (bestMatch && highestScore > 0.7) { // Confidence threshold
+        results.push({
+          queryPerson: detected.name || 'Unknown',
+          match: bestMatch.person,
+          confidence: highestScore,
+          images: this.store.getAllImages().filter(img => img.detectedPersonIds?.includes(bestMatch.person.personId))
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async generateJournalForDate(date: string) {
+    return this.journalService.generateDailyJournal(date);
+  }
+
+  getPredictions() {
+    return this.predictionService.predictFutureLocations();
+  }
+
+  async mergePeople(targetId: string, sourceId: string) {
+    const people = this.store.getPeopleStore();
+    const images = this.store.getImagesStore();
+    const relationships = this.store.getAllRelationships();
+
+    if (!people[targetId] || !people[sourceId]) {
+      throw new NotFoundException('One or both people not found');
+    }
+
+    const target = people[targetId];
+    const source = people[sourceId];
+
+    // 1. Migrate Images
+    source.imageIds.forEach(imgId => {
+      const img = images[imgId];
+      if (img) {
+        // Replace sourceId with targetId in detectedPersonIds
+        img.detectedPersonIds = Array.from(new Set(
+          img.detectedPersonIds.map(id => id === sourceId ? targetId : id)
+        ));
+        // Update the analysis structure as well
+        img.analysis.detectedPeople.forEach(dp => {
+          if (dp.personId === sourceId) dp.personId = targetId;
+        });
+      }
+      if (!target.imageIds.includes(imgId)) {
+        target.imageIds.push(imgId);
+      }
+    });
+
+    // 2. Combine Descriptors
+    target.canonicalDescriptors = Array.from(new Set([
+      ...target.canonicalDescriptors,
+      ...source.canonicalDescriptors
+    ]));
+
+    // 3. Migrate Relationships
+    const updatedRels = relationships.map(rel => {
+      if (rel.person1Id === sourceId) rel.person1Id = targetId;
+      if (rel.person2Id === sourceId) rel.person2Id = targetId;
+      return rel;
+    });
+    
+    // Deduplicate relationships (same people, same relation)
+    const uniqueRels = updatedRels.filter((v, i, a) => 
+      a.findIndex(t => 
+        ((t.person1Id === v.person1Id && t.person2Id === v.person2Id) || 
+         (t.person1Id === v.person2Id && t.person2Id === v.person1Id)) && 
+        t.relation === v.relation
+      ) === i
+    );
+
+    // 4. Update Store
+    delete people[sourceId];
+    this.store.setPeople(people);
+    this.store.setRelationships(uniqueRels);
+    
+    // Stage 5: Regenerate Biography for target
+    target.biography = await this.pipeline['personService'].generateBiography(target, images);
+    this.store.setPeople(people);
+
+    return { message: `Successfully merged ${sourceId} into ${targetId}`, target };
   }
 
   private groupBy<T>(arr: T[], key: keyof T): Record<string, number> {

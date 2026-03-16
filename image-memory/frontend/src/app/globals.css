@@ -9,9 +9,9 @@
   --text-secondary: #a0a0a0;
   --text-muted: #666666;
   
-  --accent-primary: #3b82f6;
-  --accent-secondary: #2563eb;
-  --accent-glow: rgba(59, 130, 246, 0.5);
+  --accent-primary: var(--theme-accent, #3b82f6);
+  --accent-secondary: color-mix(in srgb, var(--accent-primary), black 20%);
+  --accent-glow: color-mix(in srgb, var(--accent-primary), transparent 50%);
   
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
