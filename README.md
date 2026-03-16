@@ -2,7 +2,7 @@
 
 > A powerful, extensible agentic framework built in TypeScript — multi-agent orchestration, cron scheduling, tool plugins, session persistence, and a rich terminal UI. Powered by **Google Gemini**.
 
-![alt text](image.png)
+![alt text](/images/image.png)
 
 
 ```
