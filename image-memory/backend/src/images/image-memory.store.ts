@@ -114,11 +114,21 @@ export class ImageMemoryStore {
   }
 
   private flush(): void {
+    const TEMP_PATH = `${STORE_PATH}.tmp`;
     try {
       fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-      fs.writeFileSync(STORE_PATH, JSON.stringify(this.store, null, 2), 'utf8');
+      
+      // Atomic snapshot: write to tmp then rename
+      const data = JSON.stringify(this.store, null, 2);
+      fs.writeFileSync(TEMP_PATH, data, 'utf8');
+      fs.renameSync(TEMP_PATH, STORE_PATH);
+      
+      this.logger.debug(`[Store] Atomic snapshot successful. Size: ${(data.length / 1024).toFixed(2)} KB`);
     } catch (err) {
-      this.logger.error(`Failed to flush store to disk: ${err}`);
+      if (fs.existsSync(TEMP_PATH)) {
+        try { fs.unlinkSync(TEMP_PATH); } catch(e) {}
+      }
+      this.logger.error(`[Store] CRITICAL: Failed to flush store to disk: ${err}`);
     }
   }
 

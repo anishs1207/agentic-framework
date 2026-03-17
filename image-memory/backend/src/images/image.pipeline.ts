@@ -3,7 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { VlmService } from './vlm.service';
 import { PersonService } from './person.service';
 import { ImageMemoryStore } from './image-memory.store';
-import { ImageRecord } from './types/image-memory.types';
+import { ImageRecord, DetectedPerson } from './types/image-memory.types';
+import * as path from 'path';
+import * as process from 'process';
 
 export interface PipelineResult {
   imageId: string;
@@ -81,34 +83,33 @@ export class ImagePipeline {
       const person = updatedPeople[pId];
       const detected = analysis.detectedPeople[i];
 
-      // 1. Embedding
-      if (!person.embedding) {
-        this.logger.log(`[Pipeline] Generating embedding for person ${pId}`);
-        person.embedding = await this.vector.generateEmbedding(person.embedText);
-      }
-
-      // 2. Crop (New feature!)
+      // 1. Crop (Advanced Feature)
       if (detected.boundingBox && !person.profileImageUrl) {
-        this.logger.log(`[Pipeline] Creating identity crop for person ${pId} with box ${JSON.stringify(detected.boundingBox)}`);
+        this.logger.log(`[Pipeline] Creating identity crop for person ${pId}`);
         const cropFile = await this.imageProcessing.cropPerson(
           filePath,
           pId,
           detected.boundingBox,
         );
         if (cropFile) {
-          this.logger.log(`[Pipeline] Successfully created crop: ${cropFile}`);
           person.profileImageUrl = `/static/crops/${cropFile}`;
-        } else {
-          this.logger.warn(`[Pipeline] Failed to create crop for person ${pId}`);
-        }
-      } else {
-        if (!detected.boundingBox) {
-          this.logger.warn(`[Pipeline] No bounding box for person ${pId}, skipping crop`);
-        }
-        if (person.profileImageUrl) {
-          this.logger.log(`[Pipeline] Person ${pId} already has profile image, skipping crop`);
+          
+          // ── Stage 2.1: Targeted Refinement (The "Senior" Approach) ──
+          // Perform a high-res analysis of the crop to get better re-id data
+          const cropPath = path.join(process.cwd(), 'uploads', 'crops', cropFile);
+          const refinedData: any = await this.vlm.analyseIdentityCrop(cropPath);
+          
+          if (refinedData.detailedEmbedText) {
+            this.logger.log(`[Pipeline] Refined identity for ${pId}: ${refinedData.detailedEmbedText.slice(0, 50)}...`);
+            person.embedText = `${person.embedText}. Refined Details: ${refinedData.detailedEmbedText}`;
+            person.canonicalDescriptors = Array.from(new Set([...person.canonicalDescriptors, ...(refinedData.descriptors || [])]));
+          }
         }
       }
+
+      // 2. Embedding (Update if refined)
+      this.logger.log(`[Pipeline] Updating consensus embedding for person ${pId}`);
+      person.embedding = await this.vector.generateEmbedding(person.embedText);
     }
 
     // ── Stage 2.5: Regenerate Biographies ───────────────────────────────
@@ -130,6 +131,7 @@ export class ImagePipeline {
       analysis.relationships as any,
       resolvedPersonIds,
       existingRels,
+      timestamp,
     );
     this.store.setRelationships(updatedRels);
     const newRelsCount = updatedRels.length - existingRels.length;

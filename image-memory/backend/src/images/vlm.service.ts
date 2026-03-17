@@ -37,26 +37,28 @@ export class VlmService {
     const ext = path.extname(imagePath).toLowerCase().replace('.', '');
     const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
 
-    const prompt = `You are an expert image analysis system. Analyse this image and return a JSON object with the following structure. Be meticulous about identifying every visible person.
+    const prompt = `You are a world-class Visual Intelligence System. Analyze this scene with extreme precision.
+Identify every visible person and describe them in a way that allows a different AI to re-recognize them in a different photo.
+Extract all possible visual and atmospheric data.
 
 Return ONLY valid JSON, no markdown, no extra text:
 
 {
-  "scene": "brief scene description",
-  "atmosphere": "e.g. festive, productive, tense, cozy, formal",
-  "locationContext": "one of: Indoors, Outdoors, Nature, Urban, Home, Work, Public Space, Unknown",
-  "dominantColor": "#hexcode representing the most vibrant/characteristic color of the scene",
-  "rawDescription": "detailed paragraph about the image",
+  "scene": "concise scene title",
+  "atmosphere": "e.g. nostalgic, cozy, vibrant, tense, quiet",
+  "locationContext": "Home, Nature, Urban, Workplace, Public Space, Unknown",
+  "dominantColor": "characteristic #hex",
+  "rawDescription": "deep visual description of the entire scene",
   "tags": ["tag1", "tag2"],
-  "ocrText": "raw text extracted from any signs, documents, or labels in the image",
+  "ocrText": "exact text from any visible signage, clothing, or screens",
   "detectedPeople": [
     {
-      "name": "unknown or inferred name if visible e.g. on a badge",
-      "descriptors": ["tall", "dark hair", "blue shirt", "glasses"],
-      "embedText": "A tall person in their 30s wearing a blue shirt and glasses, with dark curly hair",
-      "age": "30-40",
-      "gender": "male",
-      "mood": "e.g. happy",
+      "name": "unknown or inferred",
+      "descriptors": ["light blue collared shirt", "dark short hair", "silver glasses"],
+      "embedText": "Detailed re-identification string describing height, clothing details, accessories, hair style, facial hair.",
+      "age": "e.g. 30s",
+      "gender": "male, female, neutral",
+      "mood": "e.g. curious",
       "boundingBox": [ymin, xmin, ymax, xmax]
     }
   ],
@@ -64,19 +66,19 @@ Return ONLY valid JSON, no markdown, no extra text:
     {
       "person1Index": 0,
       "person2Index": 1,
-      "relation": "father",
-      "confidence": 0.85,
-      "evidence": "..."
+      "relation": "father, mother, son, daughter, sibling, spouse, friend, colleague, unknown",
+      "confidence": 0.0-1.0,
+      "evidence": "precise visual proof for this inference"
     }
   ]
 }
 
 Guidelines:
-- boundingBox should be [ymin, xmin, ymax, xmax] in normalized coordinates (0-1000). Be precise.
-- mood should be a single word.
-- atmosphere should describe the overall vibe.
-- ocrText should include any visible text.
-- Relations can be: father, mother, son, daughter, sibling, brother, sister, grandfather, grandmother, husband, wife, partner, friend, colleague, or unknown.`;
+- normalized boundingBox [ymin, xmin, ymax, xmax] (0-1000). 
+- mood: single word.
+- atmosphere: overall vibe.
+- ocrText: all visible text.
+- Be exhaustive. If you see a person, document them perfectly.`;
 
     const result = await this.model.generateContent([
       prompt,
@@ -156,5 +158,40 @@ Answer the question based on the memory context above. Be specific and reference
 
     const result = await this.model.generateContent(prompt);
     return result.response.text();
+  }
+
+  /**
+   * Targeted Identity Analysis:
+   * Analyzes a cropped image of a person to get extremely fine-grained 
+   * identifiers that are missed in the wide scene scan.
+   */
+  async analyseIdentityCrop(cropPath: string): Promise<Partial<DetectedPerson>> {
+    this.logger.log(`Targeted analysis for crop: ${cropPath}`);
+    const imageBuffer = fs.readFileSync(cropPath);
+    const base64Image = imageBuffer.toString('base64');
+    
+    const prompt = `You are an Identity Recognition Expert. Analyze this close-up crop of a person.
+    Provide a hyper-detailed re-identification string including: facial hair, specific accessory details (watch brand, glasses frame color), exact clothing patterns, and estimated height/build relative to typical scale.
+    
+    Return ONLY valid JSON:
+    {
+      "detailedEmbedText": "...",
+      "descriptors": ["..."],
+      "estimatedAge": "...",
+      "mood": "..."
+    }`;
+
+    try {
+      const result = await this.model.generateContent([
+        prompt,
+        { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
+      ]);
+      const text = result.response.text().trim();
+      const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
+      return JSON.parse(clean);
+    } catch (err) {
+      this.logger.error(`Crop analysis failed`, err);
+      return {};
+    }
   }
 }

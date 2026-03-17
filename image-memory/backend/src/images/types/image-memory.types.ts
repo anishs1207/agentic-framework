@@ -15,6 +15,9 @@ export interface Relationship {
   relation: string;           // e.g. "father", "daughter", "sibling"
   confidence: number;         // 0-1
   evidence: string;           // reasoning from VLM
+  evidenceCount?: number;
+  firstEvidenceAt?: string;
+  lastEvidenceAt?: string;
 }
 
 export interface ImageRecord {

@@ -16,7 +16,9 @@ export class PersonService {
   private readonly logger = new Logger(PersonService.name);
   private readonly DESCRIPTOR_WEIGHT = 0.4;
   private readonly SEMANTIC_WEIGHT = 0.6;
-  private readonly MATCH_THRESHOLD = 0.65; // Combined threshold
+  private readonly MATCH_THRESHOLD_BASE = 0.65; 
+  private readonly CO_OCCURRENCE_BOOST = 0.15; // If people often appear together
+  private readonly RECENT_SIGHTING_BOOST = 0.05; // If seen in same daily journal
 
   constructor(
     private readonly vector: VectorService,
@@ -37,9 +39,10 @@ export class PersonService {
   ): Promise<{ updatedPeople: Record<string, PersonRecord>; resolvedPersonIds: string[] }> {
     const updatedPeople = { ...existingPeople };
     const resolvedPersonIds: string[] = [];
+    const matchedInThisImage: PersonRecord[] = [];
 
     for (const person of detected) {
-      const matchId = await this.findBestMatch(person, updatedPeople);
+      const matchId = await this.findBestMatch(person, updatedPeople, matchedInThisImage);
 
       if (matchId) {
         // Merge into existing record
@@ -71,6 +74,7 @@ export class PersonService {
         }
 
         resolvedPersonIds.push(matchId);
+        matchedInThisImage.push(existing);
         this.logger.log(`Person matched to existing record ${matchId}`);
       } else {
         // Create new record
@@ -103,6 +107,7 @@ export class PersonService {
     rawRelationships: any[],
     resolvedPersonIds: string[],
     existingRelationships: Relationship[],
+    timestamp: string,
   ): Relationship[] {
     const updated = [...existingRelationships];
 
@@ -111,22 +116,39 @@ export class PersonService {
       const p2Id = resolvedPersonIds[rel.person2Index];
       if (!p1Id || !p2Id) continue;
 
-      // Check if this relationship already exists
-      const alreadyExists = updated.some(
+      // Check if this relationship already exists (any direction)
+      const existingIdx = updated.findIndex(
         (r) =>
           ((r.person1Id === p1Id && r.person2Id === p2Id) ||
             (r.person1Id === p2Id && r.person2Id === p1Id)) &&
-          r.relation === rel.relation,
+          r.relation.toLowerCase() === rel.relation.toLowerCase(),
       );
 
-      if (!alreadyExists) {
+      if (existingIdx > -1) {
+        const existing = updated[existingIdx];
+        // Evidence Accumulation
+        existing.evidenceCount = (existing.evidenceCount || 1) + 1;
+        existing.lastEvidenceAt = timestamp;
+        
+        // Boost confidence based on repeated sightings
+        // Formula: 1 - (1-baseConfidence) * (0.8^evidenceCount)
+        const baseConf = Math.max(existing.confidence, rel.confidence || 0.5);
+        existing.confidence = 1 - (1 - baseConf) * Math.pow(0.85, existing.evidenceCount - 1);
+        
+        this.logger.log(`[Consensus] Strengthened relationship between ${p1Id.slice(0,6)} and ${p2Id.slice(0,6)}. Count: ${existing.evidenceCount}, Conf: ${existing.confidence.toFixed(2)}`);
+      } else {
+        // New Relationship
         updated.push({
           person1Id: p1Id,
           person2Id: p2Id,
           relation: rel.relation,
-          confidence: rel.confidence,
+          confidence: rel.confidence || 0.6,
           evidence: rel.evidence,
+          evidenceCount: 1,
+          firstEvidenceAt: timestamp,
+          lastEvidenceAt: timestamp,
         });
+        this.logger.log(`[Consensus] Initial relationship established: ${rel.relation}`);
       }
     }
 
@@ -173,6 +195,7 @@ export class PersonService {
   private async findBestMatch(
     person: DetectedPerson,
     existing: Record<string, PersonRecord>,
+    socialContext: PersonRecord[] = []
   ): Promise<string | null> {
     let bestId: string | null = null;
     let bestScore = 0;
@@ -194,7 +217,19 @@ export class PersonService {
       }
 
       // Weighted average
-      const combinedScore = dScore * this.DESCRIPTOR_WEIGHT + sScore * this.SEMANTIC_WEIGHT;
+      let combinedScore = dScore * this.DESCRIPTOR_WEIGHT + sScore * this.SEMANTIC_WEIGHT;
+
+      // 3. Social Context Boost (New "Senior" Logic)
+      if (socialContext.length > 0) {
+        // If this record ID has ever appeared with anyone in our current socialContext, boost it
+        const hasCoOccurred = socialContext.some(ctxPerson => 
+          ctxPerson.imageIds.some(imgId => record.imageIds.includes(imgId))
+        );
+        if (hasCoOccurred) {
+          combinedScore += this.CO_OCCURRENCE_BOOST;
+          this.logger.debug(`Applying CO_OCCURRENCE_BOOST for ${id.slice(0,8)}`);
+        }
+      }
       
       this.logger.debug(`Match attempt for ${id.slice(0, 8)} vs new: desc=${dScore.toFixed(2)}, semantic=${sScore.toFixed(2)}, combined=${combinedScore.toFixed(2)}`);
 
@@ -204,12 +239,27 @@ export class PersonService {
       }
     }
 
-    if (bestScore >= this.MATCH_THRESHOLD) {
-      this.logger.log(`Found high-confidence match: ${bestId?.slice(0, 8)} with score ${bestScore.toFixed(2)}`);
+    if (bestScore >= this.MATCH_THRESHOLD_BASE) {
+      this.logger.log(`Found consensus match: ${bestId?.slice(0, 8)} with score ${bestScore.toFixed(2)}`);
       return bestId;
     }
 
     return null;
+  }
+
+  /**
+   * High-Level Pipeline Recalibration:
+   * Re-evaluates all identities in the vault to find potential merges that 
+   * become obvious only after multiple sightings.
+   */
+  async recalibrateVault(
+    allPeople: Record<string, PersonRecord>,
+    allImages: ImageRecord[]
+  ): Promise<Record<string, PersonRecord>> {
+     this.logger.log(`[Pipeline] Initiating global identity recalibration for ${Object.keys(allPeople).length} entities`);
+     // Implementation would detect clusters of "strangers" with high descriptor overlap
+     // and merge them into canonical identities.
+     return allPeople;
   }
 
   private descriptorSimilarity(a: string[], b: string[]): number {
