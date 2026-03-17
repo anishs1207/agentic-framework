@@ -14,6 +14,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { ImageProcessor } from './image-processor';
 import { JournalService } from './journal.service';
 import { PredictionService } from './prediction.service';
+import { HighlightService } from './highlight.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PredictionService } from './prediction.service';
     ImageProcessor,
     JournalService,
     PredictionService,
+    HighlightService,
   ],
   exports: [ImagesService, ImageMemoryStore],
 })

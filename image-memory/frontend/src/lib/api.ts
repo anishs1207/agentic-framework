@@ -110,4 +110,19 @@ export const getPredictions = async () => {
   return response.data;
 };
 
+export const getFlashbacks = async () => {
+  const response = await api.get('/images/flashbacks');
+  return response.data;
+};
+
+export const getPersonHighlight = async (personId: string) => {
+  const response = await api.get(`/images/people/${personId}/highlight`);
+  return response.data;
+};
+
+export const chatWithMemory = async (query: string, history: any[]) => {
+  const response = await api.post('/backend/chat', { query, history });
+  return response.data;
+};
+
 export default api;

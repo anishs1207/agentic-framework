@@ -13,6 +13,7 @@ import NetworkGraph from '@/components/NetworkGraph';
 import MergePeopleSection from '@/components/MergePeopleSection';
 import JournalSection from '@/components/JournalSection';
 import MapView from '@/components/MapView';
+import FlashbackSection from '@/components/FlashbackSection';
 import { getAllImages, getAllPeople, getAllRelationships, getAllEvents, getJournals, resetAllData } from '@/lib/api';
 
 export default function Home() {
@@ -120,6 +121,8 @@ export default function Home() {
             ))}
           </div>
         )}
+        
+        <FlashbackSection />
         
         <UploadSection onUploadSuccess={fetchData} />
         

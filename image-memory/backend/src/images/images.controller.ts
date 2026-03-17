@@ -19,6 +19,7 @@ import { extname, join } from 'path';
 
 import { ImagesService } from './images.service';
 import { QueryMemoryDto } from './dto/query-memory.dto';
+import { ChatMemoryDto } from './dto/chat-memory.dto';
 import * as fs from 'fs';
 
 const UPLOAD_DIR = join(process.cwd(), 'data', 'uploads');
@@ -215,6 +216,21 @@ export class ImagesController {
     return this.imagesService.getPredictions();
   }
 
+  @Get('flashbacks')
+  getFlashbacks() {
+    return this.imagesService.getFlashbacks();
+  }
+
+  @Get('people/:personId/highlight')
+  getPersonHighlight(@Param('personId') personId: string) {
+    return this.imagesService.getPersonHighlight(personId);
+  }
+
+  @Get('highlights/location')
+  getLocationHighlight(@Query('name') location: string) {
+    return this.imagesService.getLocationHighlight(location);
+  }
+
   @Get('filter')
   getFiltered(
     @Query('personId') personId?: string,
@@ -249,5 +265,11 @@ export class BackendController {
     if (!dto.query?.trim())
       throw new BadRequestException('query field is required');
     return this.imagesService.queryMemory(dto.query);
+  }
+
+  @Post('chat')
+  @HttpCode(HttpStatus.OK)
+  async chatWithMemory(@Body() dto: ChatMemoryDto) {
+    return this.imagesService.chatWithMemory(dto);
   }
 }

@@ -10,6 +10,8 @@ import { VectorService } from './vector.service';
 import { ImageProcessingService } from './image-processing.service';
 import { JournalService } from './journal.service';
 import { PredictionService } from './prediction.service';
+import { HighlightService, Highlight } from './highlight.service';
+import { ChatMessage } from './dto/chat-memory.dto';
 
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -26,6 +28,7 @@ export class ImagesService {
     private readonly imageProcessing: ImageProcessingService,
     private readonly journalService: JournalService,
     private readonly predictionService: PredictionService,
+    private readonly highlightService: HighlightService,
     @InjectQueue('image-processing') private readonly imageQueue: Queue,
   ) {}
 
@@ -147,6 +150,42 @@ export class ImagesService {
     return { answer, context };
   }
 
+  /**
+   * Interactive Memory Assistant with full chat history awareness.
+   */
+  async chatWithMemory(dto: { query: string, history?: ChatMessage[] }): Promise<{ answer: string }> {
+    const context = this.store.buildMemoryContext();
+    const historyText = (dto.history || []).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+    
+    const prompt = `You are an expert personal memory assistant. 
+    Using the MEMORY CONTEXT below, answer the user's current question.
+    
+    RELEVANT MEMORY DATA:
+    ${context}
+    
+    PREVIOUS MESSAGES:
+    ${historyText}
+    
+    USER'S NEW QUESTION: ${dto.query}
+    
+    Guidelines:
+    - If talking about a person, use their name if available.
+    - Reference specific dates/scenes if possible.
+    - Be conversational and soulful.
+    - If you Don't know, state it clearly based on available context.`;
+
+    const answer = await this.vlm.queryContext('Assistant Mode', prompt);
+    return { answer };
+  }
+
+  async getPersonHighlight(personId: string): Promise<Highlight> {
+    return this.highlightService.generatePersonHighlight(personId);
+  }
+
+  async getLocationHighlight(location: string): Promise<Highlight> {
+    return this.highlightService.generateLocationHighlight(location);
+  }
+
   getStats() {
     const images = this.store.getAllImages();
     const people = this.store.getAllPeople();
@@ -212,6 +251,9 @@ export class ImagesService {
   /**
    * Get filtered images based on various criteria.
    */
+  /**
+   * Get filtered images based on various criteria.
+   */
   getFilteredImages(filters: {
     personId?: string;
     tag?: string;
@@ -256,6 +298,25 @@ export class ImagesService {
           .map((id) => this.store.getImage(id))
           .filter(Boolean),
       }));
+  }
+
+  /**
+   * Today in History: Find memories from this day in previous years.
+   */
+  getFlashbacks() {
+    const allImages = this.store.getAllImages();
+    const today = new Date();
+    const mm = today.getMonth();
+    const dd = today.getDate();
+    
+    return allImages.filter(img => {
+      const d = new Date(img.uploadedAt);
+      return (
+        d.getMonth() === mm && 
+        d.getDate() === dd && 
+        d.getFullYear() < today.getFullYear()
+      );
+    });
   }
 
   async clearData() {

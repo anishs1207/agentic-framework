@@ -25,6 +25,8 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], peo
   const [isEditing, setIsEditing] = React.useState(false);
   const [newName, setNewName] = React.useState(person.name || '');
   const [isSaving, setIsSaving] = React.useState(false);
+  const [highlight, setHighlight] = React.useState<any>(null);
+  const [isGeneratingHighlight, setIsGeneratingHighlight] = React.useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const profileUrl = person.profileImageUrl 
@@ -44,6 +46,20 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], peo
       alert('Failed to rename person');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const fetchHighlight = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsGeneratingHighlight(true);
+    try {
+      const { getPersonHighlight } = await import('@/lib/api');
+      const data = await getPersonHighlight(person.personId);
+      setHighlight(data);
+    } catch (err) {
+      console.error('Failed to get highlight:', err);
+    } finally {
+      setIsGeneratingHighlight(false);
     }
   };
 
@@ -155,18 +171,64 @@ const PersonCard: React.FC<PersonCardProps> = ({ person, relationships = [], peo
         </div>
       </div>
 
-      <p style={{ 
-        fontSize: '0.875rem', 
-        color: 'var(--text-secondary)', 
-        lineHeight: '1.6', 
-        flexGrow: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-        padding: '0.75rem',
-        borderRadius: '8px',
-        border: '1px solid rgba(255, 255, 255, 0.03)'
-      }}>
-        {person.biography || person.embedText}
-      </p>
+      {highlight ? (
+        <div style={{ 
+          margin: '0.5rem 0',
+          padding: '1rem',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderRadius: '12px',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          animation: 'fadeIn 0.5s ease-out'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase' }}>{highlight.title}</span>
+            <span style={{ fontSize: '0.6rem', padding: '1px 6px', backgroundColor: 'var(--accent-primary)', color: 'white', borderRadius: '4px' }}>{highlight.vibe}</span>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: '1.5', margin: 0 }}>
+            "{highlight.content}"
+          </p>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setHighlight(null); }}
+            style={{ marginTop: '0.5rem', fontSize: '0.65rem', color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            ← Back to Bio
+          </button>
+        </div>
+      ) : (
+        <p style={{ 
+          fontSize: '0.85rem', 
+          color: 'var(--text-secondary)', 
+          lineHeight: '1.6', 
+          flexGrow: 1,
+          backgroundColor: 'rgba(255, 255, 255, 0.02)',
+          padding: '0.75rem',
+          borderRadius: '8px',
+          border: '1px solid rgba(255, 255, 255, 0.03)'
+        }}>
+          {person.biography || person.embedText}
+        </p>
+      )}
+
+      {!highlight && (
+        <button 
+          onClick={fetchHighlight} 
+          disabled={isGeneratingHighlight}
+          style={{ 
+            marginTop: '0.25rem',
+            padding: '0.4rem 0.75rem', 
+            borderRadius: '6px', 
+            border: '1px solid var(--accent-primary)',
+            backgroundColor: 'transparent',
+            color: 'var(--accent-primary)',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            textAlign: 'center'
+          }}
+        >
+          {isGeneratingHighlight ? '📽️ Synthesizing...' : '🎬 Show My Story'}
+        </button>
+      )}
 
       {myRelationships.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
