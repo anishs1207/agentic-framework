@@ -96,7 +96,7 @@ export class ImagePipeline {
           
           // ── Stage 2.1: Targeted Refinement (The "Senior" Approach) ──
           // Perform a high-res analysis of the crop to get better re-id data
-          const cropPath = path.join(process.cwd(), 'uploads', 'crops', cropFile);
+          const cropPath = path.join(process.cwd(), 'data', 'crops', cropFile);
           const refinedData: any = await this.vlm.analyseIdentityCrop(cropPath);
           
           if (refinedData.detailedEmbedText) {

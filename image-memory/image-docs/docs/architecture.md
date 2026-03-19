@@ -13,6 +13,8 @@ The Neural Image Memory System (NIMS) is a full-stack, distributed intelligence 
 
 ## Backend (NestJS)
 
+[Read the full Backend Architecture](./backend-architecture.md)
+
 The backend is a set of orchestrated services designed for resilience and accuracy:
 
 -   **`ImagePipeline`**: The primary orchestrator for ingestion. It directs the flow from raw image to structured knowledge.
@@ -23,6 +25,8 @@ The backend is a set of orchestrated services designed for resilience and accura
 -   **`JournalService`**: Clusters temporal images into "Neural Journals" for easy storytelling.
 
 ## Frontend (Next.js)
+
+[Read the full Frontend Architecture](./frontend-architecture.md)
 
 The frontend is a modern, glassmorphic dashboard built with React and TailwindCSS (or Vanilla CSS for maximum control):
 
@@ -39,4 +43,4 @@ The frontend is a modern, glassmorphic dashboard built with React and TailwindCS
 
 ---
 
-*Documentation Date: 2026-03-17*
+*Documentation Date: 2026-03-19*

@@ -28,3 +28,7 @@ Write it in a an markdown file inside a folder updates, inside updates.md append
 
 keeps updating it, when your encounter a problem write about it, when you solve it and write
 about how you have approched it and the journey each time
+
+## Docs
+Each time a new feature is added to frontend or the backend of the image memory system and even if not update the docs to make more comprehensive and better each time to be understood by a person who is new to the project.
+(the docs is inside /image-docs)

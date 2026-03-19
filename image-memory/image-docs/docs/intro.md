@@ -42,10 +42,12 @@ For those building with us, NIMS is a complex orchestration of several modern te
 
 ## Where to go next?
 
+- **[The Backend: Nervous System](./backend-architecture)**: How NIMS backend orchestration works.
+- **[The Frontend: Glass Window](./frontend-architecture)**: How NIMS frontend UI works.
 - **[The Social Graph](./vision-pipeline)**: How NIMS recognizes your friends and family.
 - **[The Neural Assistant](./intelligence-systems)**: How to talk to your memories.
 - **[System Resilience](./persistence-security)**: How we keep your memories safe.
 
 ---
 
-*Documentation Date: 2026-03-17*
+*Documentation Date: 2026-03-19*

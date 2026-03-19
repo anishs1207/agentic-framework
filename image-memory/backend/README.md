@@ -1,28 +1,32 @@
 # Backend - Image Memory API
 
-This is the backend service for the **Agentic Framework**, providing an intelligent **Image Memory System**. Built with NestJS, Prisma, and PostgreSQL, this system leverages Google's Vision-Language Model (VLM) to analyze, index, and organize uploaded images.
+This is the backend service for the **Agentic Framework**, providing an intelligent **Image Memory System**. Built with NestJS, it leverages Google's Vision-Language Model (VLM) to analyze, index, and organize uploaded images.
 
 ## Features
 
-- **Image Ingestion & Analysis**: Upload images and automatically extract metadata, a scene description, tags, and OCR text using Google Generative AI.
-- **Person Identification**: Detects and identifies individuals across multiple images, keeping track of their first and last seen timestamps, approximate age, and gender.
-- **Relationship Extraction**: Uses VLM to infer and document relationships between different people in the same image (e.g., family, friends, colleagues) along with confidence scores and textual evidence.
-- **Natural Language Query**: Query the image memory using natural language to find specific photos, scenes, or people based on the stored analytical data.
-- **Structured Database**: Uses Prisma to map relational data for Images, People, and intricate Relationships spanning multiple photos.
+- **Image Ingestion & Analysis**: Upload images and automatically extract metadata, high-res scene descriptions, tags, and OCR text using Google Generative AI.
+- **Advanced Identity Recognition**: Detects, crops, and identifies individuals across images with high-resolution "Targeted Identity Analysis" for better re-identification accuracy.
+- **Relationship Graph**: Builds a consensus-based model of relationships (family, friends, etc.) over multiple sightings, with confidence scores and evidentiary notes.
+- **Neural Journals**: Automatically generates daily "Life Journals" summarizing the events and people encountered during a day.
+- **Flashbacks & Memory Highlights**: "Today in History" style flashbacks and AI-generated highlights for specific people or locations.
+- **Predictive Intelligence**: Analyzes patterns to predict future locations based on historical geospatial data.
+- **Similarity Search**: Find images visually similar to an uploaded sample or a specific memory.
+- **Event Timeline**: Chronological clustering of images into logical events.
+- **Natural Language Interaction**: Soulful, context-aware chat interface to query your personal memory.
 
 ## Tech Stack
 
 - **Framework**: [NestJS](https://nestjs.com/)
-- **Database**: PostgreSQL
-- **ORM**: Prisma Client
-- **AI Integration**: `@google/generative-ai` (Gemini VLM)
+- **Storage**: JSON-based `ImageMemoryStore` (hardened for persistence)
+- **AI Integration**: `@google/generative-ai` (Gemini-2.5-flash VLM)
+- **Image Processing**: [Sharp](https://sharp.pixelplumbing.com/)
 - **Language**: TypeScript
 
 ## Prerequisites
 
 - Node.js (v20+ recommended)
-- PostgreSQL database
 - Google Gemini API Key
+- Redis (optional, used for background processing queue)
 
 ## Setup & Installation
 
@@ -32,49 +36,52 @@ This is the backend service for the **Agentic Framework**, providing an intellig
    ```
 
 2. **Environment Variables:**
-   Create a `.env` file based on `.env.sample`. You will need:
+   Create a `.env` file in the root directory. You will need:
    ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/db_name?schema=public"
-   PORT=3001
    GEMINI_API_KEY="your-google-gemini-api-key"
-   ```
-
-3. **Database Migration:**
-   Run the Prisma migration to set up your PostgreSQL schemas:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev
+   PORT=3001
    ```
 
 ## Running the Application
 
 ```bash
 # development
-npm run start
-
-# watch mode
 npm run start:dev
-
-# production mode
-npm run start:prod
 ```
 
-## API Endpoints
+## API Endpoints (`/images`)
 
-Once running, the API typically listens on `http://localhost:3001` (or your configured `PORT`).
+### Ingestion & Listing
+- `POST /images/upload` — Ingest an image into memory.
+- `GET  /images` — List all memory records.
+- `GET  /images/:id` — Get specific memory details.
+- `GET  /images/:id/file` — Stream the image file.
+- `GET  /images/stats` — Memory statistics.
 
-### Images & Ingestion
-- `POST /images/upload` - Upload an image (multipart/form-data) to be processed and ingested.
-- `GET /images` - Retrieve the list of all ingested images, along with associated tags, people, and scene descriptions.
-- STATIC FILES: Served locally at `/static` pointing to the `data/uploads` directory.
+### Identity & People
+- `GET  /images/people/all` — List all identified people.
+- `GET  /images/people/:personId` — Profile and photos for a person.
+- `POST /images/people/:personId/rename` — Update a person's name.
+- `POST /images/people/merge` — Merge two identities into one.
+- `GET  /images/people/:personId/highlight` — Generate a visual highlight for a person.
 
-### People & Entities
-- `GET /images/people/all` - List all unique individuals identified across the ingested images, including their canonical descriptors.
-- `GET /images/relationships/all` - List all mapped out relationships between individuals.
+### Insights & Exploration
+- `GET  /images/relationships/all` — View the full relationship graph.
+- `GET  /images/timeline/events` — Chronological event clusters.
+- `GET  /images/flashbacks` — Memories from this day in previous years.
+- `GET  /images/predictions` — Predicted future locations.
+- `GET  /images/journals/all` — List all neural journals.
+- `POST /images/journals/generate` — Generate a journal for a specific date.
 
-### Querying
-- `POST /backend/query` - Allows querying the extensive image memory using natural language prompts.
+### Search & Filters
+- `GET  /images/search?q=...` — Semantic vector search.
+- `GET  /images/filter?tag=...&personId=...` — Filtered memory retrieval.
+- `POST /images/similar/:id` — Find similar images to a specific memory.
+- `POST /images/search-by-image` — Query memory using a new image.
 
-## License
+### Memory Interaction
+- `POST /backend/query` — Single-turn natural language query.
+- `POST /backend/chat` — Context-aware chat with memory history.
 
-This project is licensed under the MIT License.
+---
+*Last Updated: 2026-03-18*

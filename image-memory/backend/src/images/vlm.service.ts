@@ -167,21 +167,27 @@ Answer the question based on the memory context above. Be specific and reference
    */
   async analyseIdentityCrop(cropPath: string): Promise<Partial<DetectedPerson>> {
     this.logger.log(`Targeted analysis for crop: ${cropPath}`);
-    const imageBuffer = fs.readFileSync(cropPath);
-    const base64Image = imageBuffer.toString('base64');
     
-    const prompt = `You are an Identity Recognition Expert. Analyze this close-up crop of a person.
-    Provide a hyper-detailed re-identification string including: facial hair, specific accessory details (watch brand, glasses frame color), exact clothing patterns, and estimated height/build relative to typical scale.
-    
-    Return ONLY valid JSON:
-    {
-      "detailedEmbedText": "...",
-      "descriptors": ["..."],
-      "estimatedAge": "...",
-      "mood": "..."
-    }`;
-
     try {
+      if (!fs.existsSync(cropPath)) {
+        this.logger.warn(`Crop file not found: ${cropPath}`);
+        return {};
+      }
+
+      const imageBuffer = fs.readFileSync(cropPath);
+      const base64Image = imageBuffer.toString('base64');
+      
+      const prompt = `You are an Identity Recognition Expert. Analyze this close-up crop of a person.
+      Provide a hyper-detailed re-identification string including: facial hair, specific accessory details (watch brand, glasses frame color), exact clothing patterns, and estimated height/build relative to typical scale.
+      
+      Return ONLY valid JSON:
+      {
+        "detailedEmbedText": "...",
+        "descriptors": ["..."],
+        "estimatedAge": "...",
+        "mood": "..."
+      }`;
+
       const result = await this.model.generateContent([
         prompt,
         { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
@@ -190,7 +196,7 @@ Answer the question based on the memory context above. Be specific and reference
       const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
       return JSON.parse(clean);
     } catch (err) {
-      this.logger.error(`Crop analysis failed`, err);
+      this.logger.error(`Crop analysis failed for ${cropPath}`, err);
       return {};
     }
   }

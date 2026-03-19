@@ -87,6 +87,52 @@ export class ImagesController {
     return this.imagesService.getStats();
   }
 
+  @Get('search')
+  async searchImages(@Query('q') query: string) {
+    if (!query) throw new BadRequestException('q query param is required');
+    return this.imagesService.searchImages(query);
+  }
+
+  @Get('search-by-text')
+  async searchByText(@Query('q') text: string) {
+    if (!text) throw new BadRequestException('q query param is required');
+    return this.imagesService.searchByText(text);
+  }
+
+  @Get('timeline/events')
+  getTimeline() {
+    return this.imagesService.getTimeline();
+  }
+
+  @Get('geo/all')
+  getGeographic() {
+    return this.imagesService.getGeographicImages();
+  }
+
+  @Get('journals/all')
+  getJournals() {
+    return this.imagesService.getJournals();
+  }
+
+  @Get('predictions')
+  getPredictions() {
+    return this.imagesService.getPredictions();
+  }
+
+  @Get('flashbacks')
+  getFlashbacks() {
+    return this.imagesService.getFlashbacks();
+  }
+
+  @Get('filter')
+  getFiltered(
+    @Query('personId') personId?: string,
+    @Query('tag') tag?: string,
+    @Query('atmosphere') atmosphere?: string,
+  ) {
+    return this.imagesService.getFilteredImages({ personId, tag, atmosphere });
+  }
+
   @Post('search-by-image')
   @UseInterceptors(FileInterceptor('image'))
   async searchByImage(@UploadedFile() file: Express.Multer.File) {
@@ -178,47 +224,10 @@ export class ImagesController {
 
   // ── Search ───────────────────────────────────────────────────────────────
 
-  @Get('search')
-  async searchImages(@Query('q') query: string) {
-    if (!query) throw new BadRequestException('q query param is required');
-    return this.imagesService.searchImages(query);
-  }
-
-  @Get('search-by-text')
-  async searchByText(@Query('q') text: string) {
-    if (!text) throw new BadRequestException('q query param is required');
-    return this.imagesService.searchByText(text);
-  }
-
-  @Get('timeline/events')
-  getTimeline() {
-    return this.imagesService.getTimeline();
-  }
-
-  @Get('geo/all')
-  getGeographic() {
-    return this.imagesService.getGeographicImages();
-  }
-
-  @Get('journals/all')
-  getJournals() {
-    return this.imagesService.getJournals();
-  }
-
   @Post('journals/generate')
   generateJournal(@Body('date') date: string) {
     if (!date) throw new BadRequestException('date field is required');
     return this.imagesService.generateJournalForDate(date);
-  }
-
-  @Get('predictions')
-  getPredictions() {
-    return this.imagesService.getPredictions();
-  }
-
-  @Get('flashbacks')
-  getFlashbacks() {
-    return this.imagesService.getFlashbacks();
   }
 
   @Get('people/:personId/highlight')
@@ -231,16 +240,7 @@ export class ImagesController {
     return this.imagesService.getLocationHighlight(location);
   }
 
-  @Get('filter')
-  getFiltered(
-    @Query('personId') personId?: string,
-    @Query('tag') tag?: string,
-    @Query('atmosphere') atmosphere?: string,
-  ) {
-    return this.imagesService.getFilteredImages({ personId, tag, atmosphere });
-  }
-
-  @Post('similar') // Changed from GET to Post for better consistency with Body if needed, but keeping Param
+  @Post('similar/:id')
   getSimilar(@Param('id') id: string, @Query('limit') limit?: number) {
     return this.imagesService.findSimilarImages(id, limit ? Number(limit) : 5);
   }
