@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MemoryStore, ImageRecord, PersonRecord, Relationship, TimelineEvent, JournalEntry } from './types/image-memory.types';
+import {
+  MemoryStore,
+  ImageRecord,
+  PersonRecord,
+  Relationship,
+  TimelineEvent,
+  JournalEntry,
+} from './types/image-memory.types';
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'image-memory.json');
 
@@ -99,11 +106,17 @@ export class ImageMemoryStore {
     } catch (err) {
       this.logger.warn(`Could not load store from disk: ${err}`);
     }
-    return { images: {}, people: {}, relationships: [], events: [], journals: [] };
+    return {
+      images: {},
+      people: {},
+      relationships: [],
+      events: [],
+      journals: [],
+    };
   }
 
   // ─── Journals ──────────────────────────────────────────────────────────────
-  
+
   setJournals(journals: JournalEntry[]): void {
     this.store.journals = journals;
     this.flush();
@@ -117,18 +130,24 @@ export class ImageMemoryStore {
     const TEMP_PATH = `${STORE_PATH}.tmp`;
     try {
       fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-      
+
       // Atomic snapshot: write to tmp then rename
       const data = JSON.stringify(this.store, null, 2);
       fs.writeFileSync(TEMP_PATH, data, 'utf8');
       fs.renameSync(TEMP_PATH, STORE_PATH);
-      
-      this.logger.debug(`[Store] Atomic snapshot successful. Size: ${(data.length / 1024).toFixed(2)} KB`);
+
+      this.logger.debug(
+        `[Store] Atomic snapshot successful. Size: ${(data.length / 1024).toFixed(2)} KB`,
+      );
     } catch (err) {
       if (fs.existsSync(TEMP_PATH)) {
-        try { fs.unlinkSync(TEMP_PATH); } catch(e) {}
+        try {
+          fs.unlinkSync(TEMP_PATH);
+        } catch (e) {}
       }
-      this.logger.error(`[Store] CRITICAL: Failed to flush store to disk: ${err}`);
+      this.logger.error(
+        `[Store] CRITICAL: Failed to flush store to disk: ${err}`,
+      );
     }
   }
 
@@ -153,7 +172,9 @@ export class ImageMemoryStore {
       if (person.name) lines.push(`  Name: ${person.name}`);
       if (person.age) lines.push(`  Age range: ${person.age}`);
       if (person.gender) lines.push(`  Gender: ${person.gender}`);
-      lines.push(`  Visual descriptors: ${person.canonicalDescriptors.join(', ')}`);
+      lines.push(
+        `  Visual descriptors: ${person.canonicalDescriptors.join(', ')}`,
+      );
       lines.push(`  Appears in ${person.imageIds.length} image(s)`);
       lines.push(`  Summary: ${person.embedText}`);
 
@@ -177,7 +198,8 @@ export class ImageMemoryStore {
       lines.push(`  Scene: ${img.analysis.scene}`);
       lines.push(`  Description: ${img.analysis.rawDescription}`);
       lines.push(`  Tags: ${img.analysis.tags.join(', ')}`);
-      if (img.analysis.ocrText) lines.push(`  Visible Text: ${img.analysis.ocrText}`);
+      if (img.analysis.ocrText)
+        lines.push(`  Visible Text: ${img.analysis.ocrText}`);
       lines.push(`  People detected: ${img.detectedPersonIds.length}`);
       lines.push('');
     }
@@ -188,7 +210,13 @@ export class ImageMemoryStore {
    * Clear all data from the store and disk.
    */
   clear(): void {
-    this.store = { images: {}, people: {}, relationships: [], events: [], journals: [] };
+    this.store = {
+      images: {},
+      people: {},
+      relationships: [],
+      events: [],
+      journals: [],
+    };
     this.flush();
     this.logger.log('Memory store cleared.');
   }

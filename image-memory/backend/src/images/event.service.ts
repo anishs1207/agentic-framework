@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ImageRecord, TimelineEvent, MemoryStore } from './types/image-memory.types';
+import {
+  ImageRecord,
+  TimelineEvent,
+  MemoryStore,
+} from './types/image-memory.types';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -15,7 +19,8 @@ export class EventService {
 
     // Sort images by timestamp
     const sorted = [...images].sort(
-      (a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
+      (a, b) =>
+        new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
     );
 
     const events: TimelineEvent[] = [];
@@ -24,7 +29,10 @@ export class EventService {
     for (const img of sorted) {
       const imgTime = new Date(img.uploadedAt).getTime();
 
-      if (!currentEvent || imgTime - new Date(currentEvent.endTime).getTime() > this.MAX_GAP_MS) {
+      if (
+        !currentEvent ||
+        imgTime - new Date(currentEvent.endTime).getTime() > this.MAX_GAP_MS
+      ) {
         // Start a new event
         currentEvent = {
           eventId: uuidv4(),
@@ -40,10 +48,12 @@ export class EventService {
         // Append to current event
         currentEvent.endTime = img.uploadedAt;
         currentEvent.imageIds.push(img.imageId);
-        currentEvent.personIds = Array.from(new Set([...currentEvent.personIds, ...img.detectedPersonIds]));
+        currentEvent.personIds = Array.from(
+          new Set([...currentEvent.personIds, ...img.detectedPersonIds]),
+        );
         // Optionally update description if the first image was simple
         if (currentEvent.imageIds.length === 3) {
-           currentEvent.name = `Activity around ${new Date(img.uploadedAt).toLocaleTimeString()}`;
+          currentEvent.name = `Activity around ${new Date(img.uploadedAt).toLocaleTimeString()}`;
         }
       }
     }

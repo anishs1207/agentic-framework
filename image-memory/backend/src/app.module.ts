@@ -16,9 +16,9 @@ import { BullModule } from '@nestjs/bullmq';
         lazyConnect: true, // Prevents crash at start if Redis is down
       },
     }),
-    ImagesModule, 
-    PrismaModule, 
-    UserModule
+    ImagesModule,
+    PrismaModule,
+    UserModule,
   ],
 })
 export class AppModule {}

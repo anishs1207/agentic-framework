@@ -1,8 +1,12 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RegisterUserDto, LoginUserDto } from './dto';
-import { PrismaService } from "../prisma/prisma.service";
-import * as bcrypt from "bcrypt";
-import { Response } from "express";
+import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { Response } from 'express';
 
 @Injectable()
 export class UserService {
@@ -11,18 +15,18 @@ export class UserService {
   async registerUser(registerUserDto: RegisterUserDto, res: Response) {
     // no need for validation since it is already done
     // instead of this zod validation can be used
-    const {email, password, name} = registerUserDto;
+    const { email, password, name } = registerUserDto;
 
     const existingUser = await this.prisma.user.findUnique({
       where: {
-        email: email
-      }
-    })
+        email: email,
+      },
+    });
 
     if (existingUser) {
       throw new ConflictException({
         success: false,
-        message: "User already exists",
+        message: 'User already exists',
       });
     }
 
@@ -33,82 +37,81 @@ export class UserService {
         email,
         password: hashedPassword,
         name,
-      }
+      },
     });
 
-    res.cookie("access_token", process.env.ACCESS_TOKEN, {
+    res.cookie('access_token', process.env.ACCESS_TOKEN, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 1000 * 60 * 60 * 24
-    })
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 60 * 24,
+    });
 
     return {
       success: true,
-      message: "User registered successfully",
+      message: 'User registered successfully',
       data: {
         id: user.id,
         email: user.email,
         name: user.name,
-      }
-    }
+      },
+    };
   }
 
   async loginUser(loginUserDto: LoginUserDto, res: Response) {
-    const {email, password} = loginUserDto;
+    const { email, password } = loginUserDto;
 
     const user = await this.prisma.user.findUnique({
       where: {
         email,
-      }
-    })
+      },
+    });
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     // check is user's password is correct
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid Password");
+      throw new UnauthorizedException('Invalid Password');
     }
 
-    res.cookie("access_token", process.env.ACCESS_TOKEN, {
+    res.cookie('access_token', process.env.ACCESS_TOKEN, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 1000 * 60 * 60 * 24
-    })
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 60 * 24,
+    });
 
     return {
       sucess: true,
-      message: "User logged in Successfully",
+      message: 'User logged in Successfully',
       data: {
         id: user.id,
         email: user.email,
         name: user.name,
-      }
-    }
-
+      },
+    };
   }
 
   async getUserSession(req: any) {
     return {
       success: true,
-      message: "User session retrieved successfully",
-      data: req.user
+      message: 'User session retrieved successfully',
+      data: req.user,
     };
   }
 
   async logoutUser(req: any) {
     return {
       success: true,
-      message: "User logged out successfully"
+      message: 'User logged out successfully',
     };
   }
 
   async getHelloWorld() {
-    return "Hello World!";
+    return 'Hello World!';
   }
 }

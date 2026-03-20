@@ -31,3 +31,67 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run dev
+
+  image-memory-backend:
+    name: Check Image Memory Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./image-memory/backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: "./image-memory/backend/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  image-memory-frontend:
+    name: Check Image Memory Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./image-memory/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: "./image-memory/frontend/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  image-docs:
+    name: Check Image Docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./image-memory/image-docs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: "./image-memory/image-docs/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build

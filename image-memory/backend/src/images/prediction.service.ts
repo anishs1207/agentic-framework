@@ -19,14 +19,16 @@ export class PredictionService {
    * Predict likely future locations for the user or their friends.
    */
   async predictFutureLocations(): Promise<LocationPrediction[]> {
-    const images = this.store.getAllImages().filter(img => img.gps && img.analysis.locationContext);
-    
+    const images = this.store
+      .getAllImages()
+      .filter((img) => img.gps && img.analysis.locationContext);
+
     if (images.length < 5) return [];
 
     // Analyze by Day of Week and Time of Day
     const patterns: Record<string, Record<string, number>> = {};
 
-    images.forEach(img => {
+    images.forEach((img) => {
       const date = new Date(img.uploadedAt);
       const day = date.getDay(); // 0-6
       const hour = date.getHours(); // 0-23
@@ -42,24 +44,24 @@ export class PredictionService {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(now.getDate() + 1);
-    
+
     const tomorrowDay = tomorrow.getDay();
-    
-    ['Morning', 'Afternoon', 'Evening', 'Night'].forEach(slot => {
+
+    ['Morning', 'Afternoon', 'Evening', 'Night'].forEach((slot) => {
       const key = `${tomorrowDay}-${slot}`;
       const dayPatterns = patterns[key];
-      
+
       if (dayPatterns) {
-        const sorted = Object.entries(dayPatterns).sort((a,b) => b[1] - a[1]);
+        const sorted = Object.entries(dayPatterns).sort((a, b) => b[1] - a[1]);
         const [bestLoc, count] = sorted[0];
-        const total = Object.values(dayPatterns).reduce((a,b) => a+b, 0);
-        
+        const total = Object.values(dayPatterns).reduce((a, b) => a + b, 0);
+
         if (count / total > 0.5) {
           predictions.push({
             locationContext: bestLoc,
             confidence: count / total,
             reasoning: `Based on ${count} images from your history on similar days and times.`,
-            predictedTimeRange: `Tomorrow ${slot}`
+            predictedTimeRange: `Tomorrow ${slot}`,
           });
         }
       }

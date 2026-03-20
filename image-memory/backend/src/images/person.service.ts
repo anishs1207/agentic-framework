@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { PersonRecord, DetectedPerson, Relationship, ImageRecord } from './types/image-memory.types';
+import {
+  PersonRecord,
+  DetectedPerson,
+  Relationship,
+  ImageRecord,
+} from './types/image-memory.types';
 import { VectorService } from './vector.service';
 import { VlmService } from './vlm.service';
 
@@ -8,7 +13,7 @@ import { VlmService } from './vlm.service';
  * PersonService handles cross-image person identity resolution.
  *
  * Strategy: For each newly detected person, compute a similarity score
- * against every existing PersonRecord using descriptor overlap + semantic 
+ * against every existing PersonRecord using descriptor overlap + semantic
  * similarity of the embedText.
  */
 @Injectable()
@@ -16,13 +21,13 @@ export class PersonService {
   private readonly logger = new Logger(PersonService.name);
   private readonly DESCRIPTOR_WEIGHT = 0.4;
   private readonly SEMANTIC_WEIGHT = 0.6;
-  private readonly MATCH_THRESHOLD_BASE = 0.65; 
+  private readonly MATCH_THRESHOLD_BASE = 0.65;
   private readonly CO_OCCURRENCE_BOOST = 0.15; // If people often appear together
   private readonly RECENT_SIGHTING_BOOST = 0.05; // If seen in same daily journal
 
   constructor(
     private readonly vector: VectorService,
-    private readonly vlm: VlmService
+    private readonly vlm: VlmService,
   ) {}
 
   /**
@@ -36,35 +41,56 @@ export class PersonService {
     existingPeople: Record<string, PersonRecord>,
     imageId: string,
     timestamp: string,
-  ): Promise<{ updatedPeople: Record<string, PersonRecord>; resolvedPersonIds: string[] }> {
+  ): Promise<{
+    updatedPeople: Record<string, PersonRecord>;
+    resolvedPersonIds: string[];
+  }> {
     const updatedPeople = { ...existingPeople };
     const resolvedPersonIds: string[] = [];
     const matchedInThisImage: PersonRecord[] = [];
 
     for (const person of detected) {
-      const matchId = await this.findBestMatch(person, updatedPeople, matchedInThisImage);
+      const matchId = await this.findBestMatch(
+        person,
+        updatedPeople,
+        matchedInThisImage,
+      );
 
       if (matchId) {
         // Merge into existing record
         const existing = updatedPeople[matchId];
-        existing.imageIds = Array.from(new Set([...existing.imageIds, imageId]));
+        existing.imageIds = Array.from(
+          new Set([...existing.imageIds, imageId]),
+        );
         existing.lastSeen = timestamp;
-        
+
         // Merge descriptors uniquely
         existing.canonicalDescriptors = Array.from(
           new Set([...existing.canonicalDescriptors, ...person.descriptors]),
         );
 
         // Conservative merge: only adopt new info if it's high quality
-        if (person.name && person.name.toLowerCase() !== 'unknown' && (!existing.name || existing.name.toLowerCase() === 'unknown')) {
+        if (
+          person.name &&
+          person.name.toLowerCase() !== 'unknown' &&
+          (!existing.name || existing.name.toLowerCase() === 'unknown')
+        ) {
           existing.name = person.name;
         }
-        
-        if (person.age && person.age.toLowerCase() !== 'unknown' && (!existing.age || existing.age.toLowerCase() === 'unknown')) {
+
+        if (
+          person.age &&
+          person.age.toLowerCase() !== 'unknown' &&
+          (!existing.age || existing.age.toLowerCase() === 'unknown')
+        ) {
           existing.age = person.age;
         }
 
-        if (person.gender && person.gender.toLowerCase() !== 'unknown' && (!existing.gender || existing.gender.toLowerCase() === 'unknown')) {
+        if (
+          person.gender &&
+          person.gender.toLowerCase() !== 'unknown' &&
+          (!existing.gender || existing.gender.toLowerCase() === 'unknown')
+        ) {
           existing.gender = person.gender;
         }
 
@@ -129,13 +155,16 @@ export class PersonService {
         // Evidence Accumulation
         existing.evidenceCount = (existing.evidenceCount || 1) + 1;
         existing.lastEvidenceAt = timestamp;
-        
+
         // Boost confidence based on repeated sightings
         // Formula: 1 - (1-baseConfidence) * (0.8^evidenceCount)
         const baseConf = Math.max(existing.confidence, rel.confidence || 0.5);
-        existing.confidence = 1 - (1 - baseConf) * Math.pow(0.85, existing.evidenceCount - 1);
-        
-        this.logger.log(`[Consensus] Strengthened relationship between ${p1Id.slice(0,6)} and ${p2Id.slice(0,6)}. Count: ${existing.evidenceCount}, Conf: ${existing.confidence.toFixed(2)}`);
+        existing.confidence =
+          1 - (1 - baseConf) * Math.pow(0.85, existing.evidenceCount - 1);
+
+        this.logger.log(
+          `[Consensus] Strengthened relationship between ${p1Id.slice(0, 6)} and ${p2Id.slice(0, 6)}. Count: ${existing.evidenceCount}, Conf: ${existing.confidence.toFixed(2)}`,
+        );
       } else {
         // New Relationship
         updated.push({
@@ -148,7 +177,9 @@ export class PersonService {
           firstEvidenceAt: timestamp,
           lastEvidenceAt: timestamp,
         });
-        this.logger.log(`[Consensus] Initial relationship established: ${rel.relation}`);
+        this.logger.log(
+          `[Consensus] Initial relationship established: ${rel.relation}`,
+        );
       }
     }
 
@@ -158,13 +189,21 @@ export class PersonService {
   /**
    * Use the collective history of a person's appearances to generate a biological summary.
    */
-  async generateBiography(person: PersonRecord, images: Record<string, ImageRecord>): Promise<string> {
-    const relevantImages = person.imageIds.map(id => images[id]).filter(Boolean);
+  async generateBiography(
+    person: PersonRecord,
+    images: Record<string, ImageRecord>,
+  ): Promise<string> {
+    const relevantImages = person.imageIds
+      .map((id) => images[id])
+      .filter(Boolean);
     if (relevantImages.length === 0) return 'No memories recorded yet.';
 
-    const summaries = relevantImages.map(img => 
-      `- Image: ${img.filename}. Scene: ${img.analysis.scene}. Context: ${img.analysis.locationContext}. Tags: ${img.analysis.tags.join(', ')}`
-    ).join('\n');
+    const summaries = relevantImages
+      .map(
+        (img) =>
+          `- Image: ${img.filename}. Scene: ${img.analysis.scene}. Context: ${img.analysis.locationContext}. Tags: ${img.analysis.tags.join(', ')}`,
+      )
+      .join('\n');
 
     const systemPrompt = `You are an expert biographer for a visual memory system.
     Given a list of appearances for a person, write a concise but soulful biography (3-4 sentences).
@@ -182,7 +221,10 @@ export class PersonService {
 
     try {
       this.logger.log(`Generating biography for person ${person.personId}`);
-      const bio = await this.vlm.queryContext('Person Biographer Mode', systemPrompt);
+      const bio = await this.vlm.queryContext(
+        'Person Biographer Mode',
+        systemPrompt,
+      );
       return bio.trim();
     } catch (err) {
       this.logger.error(`Failed to generate bio for ${person.personId}`, err);
@@ -195,13 +237,15 @@ export class PersonService {
   private async findBestMatch(
     person: DetectedPerson,
     existing: Record<string, PersonRecord>,
-    socialContext: PersonRecord[] = []
+    socialContext: PersonRecord[] = [],
   ): Promise<string | null> {
     let bestId: string | null = null;
     let bestScore = 0;
 
     // Pre-generate embedding for the new person description if not present
-    const personEmbedding = await this.vector.generateEmbedding(person.embedText);
+    const personEmbedding = await this.vector.generateEmbedding(
+      person.embedText,
+    );
 
     for (const [id, record] of Object.entries(existing)) {
       // 1. Descriptor overlap (clothing, hair, etc.)
@@ -212,26 +256,38 @@ export class PersonService {
 
       // 2. Semantic similarity (general identity description)
       let sScore = 0;
-      if (personEmbedding.length > 0 && record.embedding && record.embedding.length > 0) {
-        sScore = this.vector.cosineSimilarity(personEmbedding, record.embedding);
+      if (
+        personEmbedding.length > 0 &&
+        record.embedding &&
+        record.embedding.length > 0
+      ) {
+        sScore = this.vector.cosineSimilarity(
+          personEmbedding,
+          record.embedding,
+        );
       }
 
       // Weighted average
-      let combinedScore = dScore * this.DESCRIPTOR_WEIGHT + sScore * this.SEMANTIC_WEIGHT;
+      let combinedScore =
+        dScore * this.DESCRIPTOR_WEIGHT + sScore * this.SEMANTIC_WEIGHT;
 
       // 3. Social Context Boost (New "Senior" Logic)
       if (socialContext.length > 0) {
         // If this record ID has ever appeared with anyone in our current socialContext, boost it
-        const hasCoOccurred = socialContext.some(ctxPerson => 
-          ctxPerson.imageIds.some(imgId => record.imageIds.includes(imgId))
+        const hasCoOccurred = socialContext.some((ctxPerson) =>
+          ctxPerson.imageIds.some((imgId) => record.imageIds.includes(imgId)),
         );
         if (hasCoOccurred) {
           combinedScore += this.CO_OCCURRENCE_BOOST;
-          this.logger.debug(`Applying CO_OCCURRENCE_BOOST for ${id.slice(0,8)}`);
+          this.logger.debug(
+            `Applying CO_OCCURRENCE_BOOST for ${id.slice(0, 8)}`,
+          );
         }
       }
-      
-      this.logger.debug(`Match attempt for ${id.slice(0, 8)} vs new: desc=${dScore.toFixed(2)}, semantic=${sScore.toFixed(2)}, combined=${combinedScore.toFixed(2)}`);
+
+      this.logger.debug(
+        `Match attempt for ${id.slice(0, 8)} vs new: desc=${dScore.toFixed(2)}, semantic=${sScore.toFixed(2)}, combined=${combinedScore.toFixed(2)}`,
+      );
 
       if (combinedScore > bestScore) {
         bestScore = combinedScore;
@@ -240,7 +296,9 @@ export class PersonService {
     }
 
     if (bestScore >= this.MATCH_THRESHOLD_BASE) {
-      this.logger.log(`Found consensus match: ${bestId?.slice(0, 8)} with score ${bestScore.toFixed(2)}`);
+      this.logger.log(
+        `Found consensus match: ${bestId?.slice(0, 8)} with score ${bestScore.toFixed(2)}`,
+      );
       return bestId;
     }
 
@@ -249,17 +307,19 @@ export class PersonService {
 
   /**
    * High-Level Pipeline Recalibration:
-   * Re-evaluates all identities in the vault to find potential merges that 
+   * Re-evaluates all identities in the vault to find potential merges that
    * become obvious only after multiple sightings.
    */
   async recalibrateVault(
     allPeople: Record<string, PersonRecord>,
-    allImages: ImageRecord[]
+    allImages: ImageRecord[],
   ): Promise<Record<string, PersonRecord>> {
-     this.logger.log(`[Pipeline] Initiating global identity recalibration for ${Object.keys(allPeople).length} entities`);
-     // Implementation would detect clusters of "strangers" with high descriptor overlap
-     // and merge them into canonical identities.
-     return allPeople;
+    this.logger.log(
+      `[Pipeline] Initiating global identity recalibration for ${Object.keys(allPeople).length} entities`,
+    );
+    // Implementation would detect clusters of "strangers" with high descriptor overlap
+    // and merge them into canonical identities.
+    return allPeople;
   }
 
   private descriptorSimilarity(a: string[], b: string[]): number {
@@ -292,7 +352,7 @@ export class PersonService {
     const updatedRels = [...existingRels];
 
     // Count how many times each pair appears together
-    images.forEach(img => {
+    images.forEach((img) => {
       const pIds = img.detectedPersonIds;
       if (pIds.length < 2) return;
 
@@ -308,9 +368,10 @@ export class PersonService {
     Object.entries(coOccurrenceCounts).forEach(([pair, count]) => {
       if (count >= 3) {
         const [sourceId, targetId] = pair.split('<->');
-        const exists = updatedRels.some(r => 
-          (r.person1Id === sourceId && r.person2Id === targetId) ||
-          (r.person1Id === targetId && r.person2Id === sourceId)
+        const exists = updatedRels.some(
+          (r) =>
+            (r.person1Id === sourceId && r.person2Id === targetId) ||
+            (r.person1Id === targetId && r.person2Id === sourceId),
         );
 
         if (!exists) {

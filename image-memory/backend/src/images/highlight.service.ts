@@ -29,8 +29,8 @@ export class HighlightService {
     if (!person) throw new NotFoundException(`Person ${personId} not found`);
 
     const images = person.imageIds
-      .map(id => this.store.getImage(id))
-      .filter(Boolean) as ImageRecord[];
+      .map((id) => this.store.getImage(id))
+      .filter(Boolean);
 
     if (images.length === 0) {
       throw new Error(`No images found for person ${personId}`);
@@ -46,16 +46,19 @@ export class HighlightService {
     
     MEMORIES CONTEXT:
     Total sightings: ${images.length}
-    Scenes: ${images.map(img => img.analysis.scene).join('; ')}
-    Atmospheres: ${images.map(img => img.analysis.atmosphere).join(', ')}`;
+    Scenes: ${images.map((img) => img.analysis.scene).join('; ')}
+    Atmospheres: ${images.map((img) => img.analysis.atmosphere).join(', ')}`;
 
-    const response = await this.vlm.queryContext('Highlight Mode', `${context}
+    const response = await this.vlm.queryContext(
+      'Highlight Mode',
+      `${context}
     
     Write a poetic title (max 4 words) and a short "Moment Highlight" (2-3 sentences) that captures their essence across these memories.
     Format your response as:
     Title: [Title]
     Vibe: [One-word atmosphere]
-    Vignette: [The Story]`);
+    Vignette: [The Story]`,
+    );
 
     const titleMatch = response.match(/Title:\s*(.*)/);
     const vibeMatch = response.match(/Vibe:\s*(.*)/);
@@ -64,7 +67,9 @@ export class HighlightService {
     return {
       id: `highlight-p-${personId}-${Date.now()}`,
       type: 'person',
-      title: titleMatch ? titleMatch[1].trim() : `${person.name || 'Someone'}'s Journey`,
+      title: titleMatch
+        ? titleMatch[1].trim()
+        : `${person.name || 'Someone'}'s Journey`,
       vibe: vibeMatch ? vibeMatch[1].trim() : 'nostalgic',
       content: vignetteMatch ? vignetteMatch[1].trim() : response,
       imageIds: person.imageIds.slice(0, 5), // Representative images
@@ -75,22 +80,30 @@ export class HighlightService {
    * Generate a highlight for a specific location context.
    */
   async generateLocationHighlight(location: string): Promise<Highlight> {
-    const images = this.store.getAllImages().filter(img => 
-      img.analysis.locationContext?.toLowerCase() === location.toLowerCase()
-    );
+    const images = this.store
+      .getAllImages()
+      .filter(
+        (img) =>
+          img.analysis.locationContext?.toLowerCase() ===
+          location.toLowerCase(),
+      );
 
-    if (images.length === 0) throw new NotFoundException(`No memories found in ${location}`);
+    if (images.length === 0)
+      throw new NotFoundException(`No memories found in ${location}`);
 
     const context = `Write a short, cinematic description of the user's memories in "${location}". 
     Focus on the sensory details mentioned in the image analyses:
-    ${images.map(img => img.analysis.rawDescription.slice(0, 100)).join('\n---\n')}`;
+    ${images.map((img) => img.analysis.rawDescription.slice(0, 100)).join('\n---\n')}`;
 
-    const response = await this.vlm.queryContext('Location Highlight', `${context}
+    const response = await this.vlm.queryContext(
+      'Location Highlight',
+      `${context}
     
     Format:
     Title: [Cinematic Title]
     Vibe: [Atmosphere]
-    Vignette: [Story]`);
+    Vignette: [Story]`,
+    );
 
     const titleMatch = response.match(/Title:\s*(.*)/);
     const vibeMatch = response.match(/Vibe:\s*(.*)/);
@@ -102,7 +115,7 @@ export class HighlightService {
       title: titleMatch ? titleMatch[1].trim() : `The Spirit of ${location}`,
       vibe: vibeMatch ? vibeMatch[1].trim() : 'immersive',
       content: vignetteMatch ? vignetteMatch[1].trim() : response,
-      imageIds: images.map(img => img.imageId).slice(0, 3),
+      imageIds: images.map((img) => img.imageId).slice(0, 3),
     };
   }
 }

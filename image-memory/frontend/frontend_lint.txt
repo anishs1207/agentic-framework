@@ -1,0 +1,89 @@
+
+> frontend@0.1.0 lint
+> eslint
+
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\app\page.tsx
+   20:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\EventTimeline.tsx
+  53:37  warning  'i' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\FlashbackSection.tsx
+   5:48  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  54:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\ImageCard.tsx
+   15:22  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   17:20  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   19:12  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   57:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  121:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\JournalSection.tsx
+   7:13  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  64:91  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\MapView.tsx
+    5:11  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+    9:50  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   55:38  warning  'i' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  111:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  111:17  warning  img elements must have an alt prop, either with meaningful text, or an empty string for decorative images                                                                                                                                                                                jsx-a11y/alt-text
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\MergePeopleSection.tsx
+   7:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  35:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\NetworkGraph.tsx
+    3:44  warning  'useEffect' is defined but never used       @typescript-eslint/no-unused-vars
+    6:11  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+    7:18  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+   49:29  error    Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+  126:21  warning  'angle' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\PersonCard.tsx
+   18:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   19:12  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   28:52  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   70:36  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   99:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  105:30  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  106:30  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  188:13  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  188:33  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  251:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\QuerySection.tsx
+   15:54  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   51:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  224:20  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  224:20  warning  img elements must have an alt prop, either with meaningful text, or an empty string for decorative images                                                                                                                                                                                jsx-a11y/alt-text
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\RelationshipSection.tsx
+   15:11  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   81:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  120:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  141:15  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  141:30  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\SearchSection.tsx
+    7:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    9:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   10:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\components\UploadSection.tsx
+  29:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\image-memory\frontend\src\lib\api.ts
+  123:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 54 problems (39 errors, 15 warnings)
+

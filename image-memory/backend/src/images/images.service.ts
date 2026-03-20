@@ -2,7 +2,11 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { ImageMemoryStore } from './image-memory.store';
 import { ImagePipeline } from './image.pipeline';
 import { VlmService } from './vlm.service';
-import { ImageRecord, PersonRecord, Relationship } from './types/image-memory.types';
+import {
+  ImageRecord,
+  PersonRecord,
+  Relationship,
+} from './types/image-memory.types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -38,30 +42,38 @@ export class ImagesService {
    */
   async ingestImage(file: Express.Multer.File) {
     try {
-      await this.imageQueue.add('analyze', {
-        filePath: file.path,
-        filename: file.originalname,
-      }, {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
+      await this.imageQueue.add(
+        'analyze',
+        {
+          filePath: file.path,
+          filename: file.originalname,
         },
-      });
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        },
+      );
 
-      return { 
+      return {
         message: 'Image queued for processing',
         filename: file.originalname,
-        status: 'queued'
+        status: 'queued',
       };
     } catch (err) {
-      this.logger.error('Redis connection failed, processing image synchronously as fallback', err);
+      this.logger.error(
+        'Redis connection failed, processing image synchronously as fallback',
+        err,
+      );
       // Fallback: process immediately if queue is dead
       this.pipeline.run(file.path, file.originalname);
       return {
-        message: 'Processing image synchronously (Background queue unavailable)',
+        message:
+          'Processing image synchronously (Background queue unavailable)',
         filename: file.originalname,
-        status: 'processing'
+        status: 'processing',
       };
     }
   }
@@ -81,16 +93,21 @@ export class ImagesService {
   getImageFile(imageId: string): { path: string; filename: string } {
     const img = this.store.getImage(imageId);
     if (!img) throw new NotFoundException(`Image ${imageId} not found`);
-    
+
     let filePath = img.storagePath;
     // Fallback: if absolute path doesn't exist, try relative to current directory
     if (!fs.existsSync(filePath)) {
-      filePath = path.join(process.cwd(), 'data', 'uploads', path.basename(img.storagePath));
+      filePath = path.join(
+        process.cwd(),
+        'data',
+        'uploads',
+        path.basename(img.storagePath),
+      );
     }
 
     if (!fs.existsSync(filePath))
       throw new NotFoundException(`Image file not found on disk`);
-    
+
     return { path: filePath, filename: img.filename };
   }
 
@@ -105,7 +122,7 @@ export class ImagesService {
     if (!person) throw new NotFoundException(`Person ${personId} not found`);
     const images = person.imageIds
       .map((id) => this.store.getImage(id))
-      .filter(Boolean) as ImageRecord[];
+      .filter(Boolean);
     return { ...person, images };
   }
 
@@ -113,7 +130,7 @@ export class ImagesService {
     const people = this.store.getPeopleStore();
     const person = people[personId];
     if (!person) throw new NotFoundException(`Person ${personId} not found`);
-    
+
     person.name = name;
     this.store.setPeople(people);
     return person;
@@ -144,7 +161,9 @@ export class ImagesService {
 
   // ─── Memory query endpoint ──────────────────────────────────────────────
 
-  async queryMemory(query: string): Promise<{ answer: string; context: string }> {
+  async queryMemory(
+    query: string,
+  ): Promise<{ answer: string; context: string }> {
     const context = this.store.buildMemoryContext();
     const answer = await this.vlm.queryContext(context, query);
     return { answer, context };
@@ -153,10 +172,15 @@ export class ImagesService {
   /**
    * Interactive Memory Assistant with full chat history awareness.
    */
-  async chatWithMemory(dto: { query: string, history?: ChatMessage[] }): Promise<{ answer: string }> {
+  async chatWithMemory(dto: {
+    query: string;
+    history?: ChatMessage[];
+  }): Promise<{ answer: string }> {
     const context = this.store.buildMemoryContext();
-    const historyText = (dto.history || []).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-    
+    const historyText = (dto.history || [])
+      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+      .join('\n');
+
     const prompt = `You are an expert personal memory assistant. 
     Using the MEMORY CONTEXT below, answer the user's current question.
     
@@ -206,7 +230,7 @@ export class ImagesService {
       .filter((img) => img.embedding)
       .map((img) => ({
         ...img,
-        score: this.vector.cosineSimilarity(queryEmbed, img.embedding!),
+        score: this.vector.cosineSimilarity(queryEmbed, img.embedding),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
@@ -222,7 +246,7 @@ export class ImagesService {
       (img) =>
         img.analysis.ocrText?.toLowerCase().includes(query) ||
         img.analysis.rawDescription.toLowerCase().includes(query) ||
-        img.analysis.tags.some(tag => tag.toLowerCase().includes(query)),
+        img.analysis.tags.some((tag) => tag.toLowerCase().includes(query)),
     );
   }
 
@@ -242,7 +266,10 @@ export class ImagesService {
       .filter((img) => img.embedding && img.imageId !== imageId)
       .map((img) => ({
         ...img,
-        similarity: this.vector.cosineSimilarity(target.embedding!, img.embedding!),
+        similarity: this.vector.cosineSimilarity(
+          target.embedding,
+          img.embedding,
+        ),
       }))
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
@@ -263,7 +290,7 @@ export class ImagesService {
 
     if (filters.personId) {
       images = images.filter((img) =>
-        img.detectedPersonIds.includes(filters.personId!),
+        img.detectedPersonIds.includes(filters.personId),
       );
     }
 
@@ -291,7 +318,10 @@ export class ImagesService {
     const events = this.store.getAllEvents();
     // Enrich events with their actual image objects
     return events
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+      )
       .map((ev) => ({
         ...ev,
         images: ev.imageIds
@@ -308,12 +338,12 @@ export class ImagesService {
     const today = new Date();
     const mm = today.getMonth();
     const dd = today.getDate();
-    
-    return allImages.filter(img => {
+
+    return allImages.filter((img) => {
       const d = new Date(img.uploadedAt);
       return (
-        d.getMonth() === mm && 
-        d.getDate() === dd && 
+        d.getMonth() === mm &&
+        d.getDate() === dd &&
         d.getFullYear() < today.getFullYear()
       );
     });
@@ -321,7 +351,7 @@ export class ImagesService {
 
   async clearData() {
     this.store.clear();
-    
+
     const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
     const cropsDir = path.join(process.cwd(), 'data', 'crops');
 
@@ -340,17 +370,20 @@ export class ImagesService {
 
     cleanDir(uploadsDir);
     cleanDir(cropsDir);
-    
+
     return { message: 'All memory data and files have been cleared.' };
   }
 
-  async blurStrangers(imageId: string, regions: [number, number, number, number][]): Promise<Buffer> {
+  async blurStrangers(
+    imageId: string,
+    regions: [number, number, number, number][],
+  ): Promise<Buffer> {
     const { path: filePath } = this.getImageFile(imageId);
     return this.imageProcessing.blurRegions(filePath, regions);
   }
 
   getGeographicImages() {
-    return this.store.getAllImages().filter(img => img.gps);
+    return this.store.getAllImages().filter((img) => img.gps);
   }
 
   getJournals() {
@@ -358,11 +391,16 @@ export class ImagesService {
   }
 
   async searchByImage(file: Express.Multer.File) {
-    this.logger.log(`[Search] Visual search started for file: ${file.originalname}`);
+    this.logger.log(
+      `[Search] Visual search started for file: ${file.originalname}`,
+    );
     const analysis = await this.vlm.analyseImage(file.path);
-    
+
     if (analysis.detectedPeople.length === 0) {
-      return { message: 'No people detected in this image to search for.', matches: [] };
+      return {
+        message: 'No people detected in this image to search for.',
+        matches: [],
+      };
     }
 
     const peopleStore = this.store.getPeopleStore();
@@ -370,7 +408,7 @@ export class ImagesService {
 
     for (const detected of analysis.detectedPeople) {
       const embedding = await this.vector.generateEmbedding(detected.embedText);
-      
+
       let bestMatch = null;
       let highestScore = 0;
 
@@ -383,12 +421,17 @@ export class ImagesService {
         }
       }
 
-      if (bestMatch && highestScore > 0.7) { // Confidence threshold
+      if (bestMatch && highestScore > 0.7) {
+        // Confidence threshold
         results.push({
           queryPerson: detected.name || 'Unknown',
           match: bestMatch.person,
           confidence: highestScore,
-          images: this.store.getAllImages().filter(img => img.detectedPersonIds?.includes(bestMatch.person.personId))
+          images: this.store
+            .getAllImages()
+            .filter((img) =>
+              img.detectedPersonIds?.includes(bestMatch.person.personId),
+            ),
         });
       }
     }
@@ -417,15 +460,19 @@ export class ImagesService {
     const source = people[sourceId];
 
     // 1. Migrate Images
-    source.imageIds.forEach(imgId => {
+    source.imageIds.forEach((imgId) => {
       const img = images[imgId];
       if (img) {
         // Replace sourceId with targetId in detectedPersonIds
-        img.detectedPersonIds = Array.from(new Set(
-          img.detectedPersonIds.map(id => id === sourceId ? targetId : id)
-        ));
+        img.detectedPersonIds = Array.from(
+          new Set(
+            img.detectedPersonIds.map((id) =>
+              id === sourceId ? targetId : id,
+            ),
+          ),
+        );
         // Update the analysis structure as well
-        img.analysis.detectedPeople.forEach(dp => {
+        img.analysis.detectedPeople.forEach((dp) => {
           if (dp.personId === sourceId) dp.personId = targetId;
         });
       }
@@ -435,37 +482,44 @@ export class ImagesService {
     });
 
     // 2. Combine Descriptors
-    target.canonicalDescriptors = Array.from(new Set([
-      ...target.canonicalDescriptors,
-      ...source.canonicalDescriptors
-    ]));
+    target.canonicalDescriptors = Array.from(
+      new Set([...target.canonicalDescriptors, ...source.canonicalDescriptors]),
+    );
 
     // 3. Migrate Relationships
-    const updatedRels = relationships.map(rel => {
+    const updatedRels = relationships.map((rel) => {
       if (rel.person1Id === sourceId) rel.person1Id = targetId;
       if (rel.person2Id === sourceId) rel.person2Id = targetId;
       return rel;
     });
-    
+
     // Deduplicate relationships (same people, same relation)
-    const uniqueRels = updatedRels.filter((v, i, a) => 
-      a.findIndex(t => 
-        ((t.person1Id === v.person1Id && t.person2Id === v.person2Id) || 
-         (t.person1Id === v.person2Id && t.person2Id === v.person1Id)) && 
-        t.relation === v.relation
-      ) === i
+    const uniqueRels = updatedRels.filter(
+      (v, i, a) =>
+        a.findIndex(
+          (t) =>
+            ((t.person1Id === v.person1Id && t.person2Id === v.person2Id) ||
+              (t.person1Id === v.person2Id && t.person2Id === v.person1Id)) &&
+            t.relation === v.relation,
+        ) === i,
     );
 
     // 4. Update Store
     delete people[sourceId];
     this.store.setPeople(people);
     this.store.setRelationships(uniqueRels);
-    
+
     // Stage 5: Regenerate Biography for target
-    target.biography = await this.pipeline['personService'].generateBiography(target, images);
+    target.biography = await this.pipeline['personService'].generateBiography(
+      target,
+      images,
+    );
     this.store.setPeople(people);
 
-    return { message: `Successfully merged ${sourceId} into ${targetId}`, target };
+    return {
+      message: `Successfully merged ${sourceId} into ${targetId}`,
+      target,
+    };
   }
 
   private groupBy<T>(arr: T[], key: keyof T): Record<string, number> {

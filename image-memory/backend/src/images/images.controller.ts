@@ -71,7 +71,8 @@ export class ImagesController {
     }),
   )
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('No image file provided (field: "image")');
+    if (!file)
+      throw new BadRequestException('No image file provided (field: "image")');
     return this.imagesService.ingestImage(file);
   }
 
@@ -157,12 +158,12 @@ export class ImagesController {
   async streamBlurred(@Param('id') id: string, @Res() res: Response) {
     const { path: filePath } = this.imagesService.getImageFile(id);
     const img = this.imagesService.getImage(id);
-    
+
     // Privacy Logic: find people with no name or name "unknown"
     const strangers = img.analysis.detectedPeople
-      .filter(p => !p.name || p.name.toLowerCase() === 'unknown')
-      .map(p => p.boundingBox)
-      .filter(Boolean) as [number, number, number, number][];
+      .filter((p) => !p.name || p.name.toLowerCase() === 'unknown')
+      .map((p) => p.boundingBox)
+      .filter(Boolean);
 
     if (strangers.length === 0) {
       const stream = fs.createReadStream(filePath);
@@ -188,15 +189,22 @@ export class ImagesController {
 
   @Post('people/:personId/rename')
   @HttpCode(HttpStatus.OK)
-  renamePerson(@Param('personId') personId: string, @Body('name') name: string) {
+  renamePerson(
+    @Param('personId') personId: string,
+    @Body('name') name: string,
+  ) {
     if (!name) throw new BadRequestException('Name is required');
     return this.imagesService.updatePersonName(personId, name);
   }
 
   @Post('people/merge')
   @HttpCode(HttpStatus.OK)
-  mergePeople(@Body('targetId') targetId: string, @Body('sourceId') sourceId: string) {
-    if (!targetId || !sourceId) throw new BadRequestException('targetId and sourceId are required');
+  mergePeople(
+    @Body('targetId') targetId: string,
+    @Body('sourceId') sourceId: string,
+  ) {
+    if (!targetId || !sourceId)
+      throw new BadRequestException('targetId and sourceId are required');
     return this.imagesService.mergePeople(targetId, sourceId);
   }
 

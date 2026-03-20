@@ -27,7 +27,12 @@ describe('PersonService', () => {
         },
       ];
       const existing: Record<string, PersonRecord> = {};
-      const result = service.resolvePeople(detected, existing, 'img-1', '2024-01-01');
+      const result = service.resolvePeople(
+        detected,
+        existing,
+        'img-1',
+        '2024-01-01',
+      );
 
       expect(Object.keys(result.updatedPeople)).toHaveLength(1);
       expect(result.resolvedPersonIds).toHaveLength(1);
@@ -57,7 +62,12 @@ describe('PersonService', () => {
         },
       ];
 
-      const result = service.resolvePeople(detected, existing, 'img-1', '2024-01-02');
+      const result = service.resolvePeople(
+        detected,
+        existing,
+        'img-1',
+        '2024-01-02',
+      );
       expect(result.resolvedPersonIds[0]).toBe(personId);
       expect(result.updatedPeople[personId].imageIds).toContain('img-1');
     });

@@ -44,10 +44,7 @@ export class ImagePipeline {
     private readonly imageProcessing: ImageProcessingService,
   ) {}
 
-  async run(
-    filePath: string,
-    filename: string,
-  ): Promise<PipelineResult> {
+  async run(filePath: string, filename: string): Promise<PipelineResult> {
     const imageId = uuidv4();
     const timestamp = new Date().toISOString();
 
@@ -93,22 +90,31 @@ export class ImagePipeline {
         );
         if (cropFile) {
           person.profileImageUrl = `/static/crops/${cropFile}`;
-          
+
           // ── Stage 2.1: Targeted Refinement (The "Senior" Approach) ──
           // Perform a high-res analysis of the crop to get better re-id data
           const cropPath = path.join(process.cwd(), 'data', 'crops', cropFile);
           const refinedData: any = await this.vlm.analyseIdentityCrop(cropPath);
-          
+
           if (refinedData.detailedEmbedText) {
-            this.logger.log(`[Pipeline] Refined identity for ${pId}: ${refinedData.detailedEmbedText.slice(0, 50)}...`);
+            this.logger.log(
+              `[Pipeline] Refined identity for ${pId}: ${refinedData.detailedEmbedText.slice(0, 50)}...`,
+            );
             person.embedText = `${person.embedText}. Refined Details: ${refinedData.detailedEmbedText}`;
-            person.canonicalDescriptors = Array.from(new Set([...person.canonicalDescriptors, ...(refinedData.descriptors || [])]));
+            person.canonicalDescriptors = Array.from(
+              new Set([
+                ...person.canonicalDescriptors,
+                ...(refinedData.descriptors || []),
+              ]),
+            );
           }
         }
       }
 
       // 2. Embedding (Update if refined)
-      this.logger.log(`[Pipeline] Updating consensus embedding for person ${pId}`);
+      this.logger.log(
+        `[Pipeline] Updating consensus embedding for person ${pId}`,
+      );
       person.embedding = await this.vector.generateEmbedding(person.embedText);
     }
 
@@ -118,7 +124,10 @@ export class ImagePipeline {
     for (const pId of resolvedPersonIds) {
       const person = updatedPeople[pId];
       // Only regenerate if bios are enabled and we have at least 1 image
-      person.biography = await this.personService.generateBiography(person, allImagesForBio);
+      person.biography = await this.personService.generateBiography(
+        person,
+        allImagesForBio,
+      );
     }
 
     // Update person store
@@ -155,15 +164,17 @@ export class ImagePipeline {
     const activePeopleStr = analysis.detectedPeople
       .map((p) => `${p.name || 'A person'} (${p.descriptors.join(', ')})`)
       .join('; ');
-    
+
     const imageContentForEmbedding = `Scene: ${analysis.scene}. 
       Atmosphere: ${analysis.atmosphere}. 
       Description: ${analysis.rawDescription}. 
       People: ${activePeopleStr}. 
       Text found: ${analysis.ocrText || 'None'}. 
       Tags: ${analysis.tags.join(', ')}`;
-    
-    const imageEmbedding = await this.vector.generateEmbedding(imageContentForEmbedding);
+
+    const imageEmbedding = await this.vector.generateEmbedding(
+      imageContentForEmbedding,
+    );
 
     const imageRecord: ImageRecord = {
       imageId,
@@ -193,7 +204,10 @@ export class ImagePipeline {
 
     // predictive relationships
     const currentRels = this.store.getAllRelationships();
-    const predictedRels = this.personService.predictRelationships(allImages, currentRels);
+    const predictedRels = this.personService.predictRelationships(
+      allImages,
+      currentRels,
+    );
     this.store.setRelationships(predictedRels);
 
     this.logger.log(

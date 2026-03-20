@@ -28,7 +28,7 @@ export class ImageProcessingService {
       if (!metadata.width || !metadata.height) return null;
 
       let [ymin, xmin, ymax, xmax] = box;
-      
+
       // Calculate padding (25% of width/height for better context)
       const padW = (xmax - xmin) * 0.25;
       const padH = (ymax - ymin) * 0.25;
@@ -52,7 +52,9 @@ export class ImageProcessingService {
 
       // Ensure dimensions are positive
       if (width <= 0 || height <= 0) {
-        this.logger.warn(`Invalid crop for person ${personId}: ${width}x${height}`);
+        this.logger.warn(
+          `Invalid crop for person ${personId}: ${width}x${height}`,
+        );
         return null;
       }
 
@@ -66,7 +68,9 @@ export class ImageProcessingService {
 
       return cropFilename;
     } catch (err) {
-      this.logger.error(`Failed to crop image for person ${personId}: ${err.message}`);
+      this.logger.error(
+        `Failed to crop image for person ${personId}: ${err.message}`,
+      );
       return null;
     }
   }
@@ -80,24 +84,36 @@ export class ImageProcessingService {
   ): Promise<Buffer> {
     try {
       const metadata = await sharp(sourcePath).metadata();
-      if (!metadata.width || !metadata.height) throw new Error('Invalid metadata');
+      if (!metadata.width || !metadata.height)
+        throw new Error('Invalid metadata');
 
       const composites = await Promise.all(
         regions.map(async (box) => {
           const [ymin, xmin, ymax, xmax] = box;
-          const left = Math.round((xmin / 1000) * metadata.width!);
-          const top = Math.round((ymin / 1000) * metadata.height!);
-          const width = Math.round(((xmax - xmin) / 1000) * metadata.width!);
-          const height = Math.round(((ymax - ymin) / 1000) * metadata.height!);
+          const left = Math.round((xmin / 1000) * metadata.width);
+          const top = Math.round((ymin / 1000) * metadata.height);
+          const width = Math.round(((xmax - xmin) / 1000) * metadata.width);
+          const height = Math.round(((ymax - ymin) / 1000) * metadata.height);
 
           // Safety clamping
-          const safeLeft = Math.max(0, Math.min(left, metadata.width! - 1));
-          const safeTop = Math.max(0, Math.min(top, metadata.height! - 1));
-          const safeWidth = Math.max(1, Math.min(width, metadata.width! - safeLeft));
-          const safeHeight = Math.max(1, Math.min(height, metadata.height! - safeTop));
+          const safeLeft = Math.max(0, Math.min(left, metadata.width - 1));
+          const safeTop = Math.max(0, Math.min(top, metadata.height - 1));
+          const safeWidth = Math.max(
+            1,
+            Math.min(width, metadata.width - safeLeft),
+          );
+          const safeHeight = Math.max(
+            1,
+            Math.min(height, metadata.height - safeTop),
+          );
 
           const blurredPart = await sharp(sourcePath)
-            .extract({ left: safeLeft, top: safeTop, width: safeWidth, height: safeHeight })
+            .extract({
+              left: safeLeft,
+              top: safeTop,
+              width: safeWidth,
+              height: safeHeight,
+            })
             .blur(30)
             .toBuffer();
 

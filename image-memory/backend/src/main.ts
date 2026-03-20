@@ -1,13 +1,13 @@
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from "@nestjs/common";
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { join } from 'path';
 import { json, urlencoded, static as expressStatic } from 'express';
 
 dotenv.config({
-  path: "../.env"
-})
+  path: '../.env',
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,8 +17,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-    })
-  )
+    }),
+  );
 
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));

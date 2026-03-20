@@ -91,7 +91,9 @@ Guidelines:
     ]);
 
     const text = result.response.text().trim();
-    this.logger.debug(`Raw VLM Response for ${path.basename(imagePath)}: ${text}`);
+    this.logger.debug(
+      `Raw VLM Response for ${path.basename(imagePath)}: ${text}`,
+    );
 
     try {
       const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
@@ -99,7 +101,7 @@ Guidelines:
 
       const people: DetectedPerson[] = (raw.detectedPeople || []).map(
         (p: any) => ({
-          personId: '', 
+          personId: '',
           name: p.name || undefined,
           descriptors: p.descriptors || [],
           embedText: p.embedText || '',
@@ -146,7 +148,10 @@ Guidelines:
   /**
    * Ask the VLM a free-form question about the image memory context.
    */
-  async queryContext(systemContext: string, userQuery: string): Promise<string> {
+  async queryContext(
+    systemContext: string,
+    userQuery: string,
+  ): Promise<string> {
     const prompt = `You are an intelligent assistant with access to an image-based memory system.
 
 MEMORY CONTEXT:
@@ -162,12 +167,14 @@ Answer the question based on the memory context above. Be specific and reference
 
   /**
    * Targeted Identity Analysis:
-   * Analyzes a cropped image of a person to get extremely fine-grained 
+   * Analyzes a cropped image of a person to get extremely fine-grained
    * identifiers that are missed in the wide scene scan.
    */
-  async analyseIdentityCrop(cropPath: string): Promise<Partial<DetectedPerson>> {
+  async analyseIdentityCrop(
+    cropPath: string,
+  ): Promise<Partial<DetectedPerson>> {
     this.logger.log(`Targeted analysis for crop: ${cropPath}`);
-    
+
     try {
       if (!fs.existsSync(cropPath)) {
         this.logger.warn(`Crop file not found: ${cropPath}`);
@@ -176,7 +183,7 @@ Answer the question based on the memory context above. Be specific and reference
 
       const imageBuffer = fs.readFileSync(cropPath);
       const base64Image = imageBuffer.toString('base64');
-      
+
       const prompt = `You are an Identity Recognition Expert. Analyze this close-up crop of a person.
       Provide a hyper-detailed re-identification string including: facial hair, specific accessory details (watch brand, glasses frame color), exact clothing patterns, and estimated height/build relative to typical scale.
       
@@ -190,7 +197,7 @@ Answer the question based on the memory context above. Be specific and reference
 
       const result = await this.model.generateContent([
         prompt,
-        { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
+        { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
       ]);
       const text = result.response.text().trim();
       const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
