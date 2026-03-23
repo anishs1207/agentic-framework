@@ -22,16 +22,16 @@ export const wikipediaTool = new Tool({
         return `No Wikipedia article found for "${query}"`;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await response.json();
-      const title = data.title || query;
-      const extract = data.extract || "No summary available.";
+      const data = (await response.json()) as Record<string, unknown>;
+      const title = (data.title as string) || query;
+      const extract = (data.extract as string) || "No summary available.";
 
       // Truncate to keep it manageable
       const summary = extract.length > 500 ? extract.slice(0, 500) + "..." : extract;
       return `Wikipedia: ${title}\n${summary}`;
     } catch (error: unknown) {
-      return `Wikipedia search failed: ${(error as Error).message}`;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return `Wikipedia search failed: ${errorMsg}`;
     }
   },
 });

@@ -6,7 +6,16 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    ignores: ["dist/**", "**/node_modules/**", "**/build/**", "**.next/**", "**.docusaurus/**", "image-memory/**"],
+    ignores: [
+      "dist/**",
+      "**/node_modules/**",
+      "**/build/**",
+      "**/.next/**",
+      "**/.docusaurus/**",
+      "image-memory/**",
+      "testing-video/**",
+      "updates/**"
+    ],
   },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,
@@ -16,6 +25,11 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
       "react/react-in-jsx-scope": "off",
-    }
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
   }
 ]);

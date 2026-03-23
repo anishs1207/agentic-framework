@@ -14,7 +14,7 @@ const PLUGINS_DIR = path.resolve("plugins");
 
 export interface PluginLoadResult {
   file: string;
-  tools: Tool<any>[];
+  tools: Tool<unknown>[];
   error?: string;
 }
 
@@ -43,7 +43,7 @@ export async function loadPlugins(): Promise<PluginLoadResult[]> {
         continue;
       }
 
-      const tools: Tool<any>[] = Array.isArray(exported) ? exported : [exported];
+      const tools: Tool<unknown>[] = Array.isArray(exported) ? exported : [exported];
       const valid = tools.filter((t) => t && typeof t.execute === "function");
 
       if (valid.length === 0) {
@@ -53,9 +53,10 @@ export async function loadPlugins(): Promise<PluginLoadResult[]> {
 
       logger.info(`🔌 Plugin loaded: ${file} (${valid.length} tool${valid.length > 1 ? "s" : ""})`);
       results.push({ file, tools: valid });
-    } catch (err: any) {
-      results.push({ file, tools: [], error: err.message });
-      logger.error(`Plugin load failed (${file}): ${err.message}`);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      results.push({ file, tools: [], error: errMsg });
+      logger.error(`Plugin load failed (${file}): ${errMsg}`);
     }
   }
 

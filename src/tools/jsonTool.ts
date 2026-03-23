@@ -14,25 +14,25 @@ const JsonSchema = z.object({
 
 type JsonInput = z.infer<typeof JsonSchema>;
 
-function getByPath(obj: any, dotPath: string): any {
+function getByPath(obj: unknown, dotPath: string): unknown {
   const parts = dotPath.split(".");
-  let cur = obj;
+  let cur: unknown = obj;
   for (const part of parts) {
-    if (cur == null) return undefined;
-    cur = cur[part];
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[part];
   }
   return cur;
 }
 
-function summarise(obj: any, depth = 0): string {
+function summarise(obj: unknown, depth = 0): string {
   if (depth > 3) return "(...)";
   if (obj === null) return "null";
   if (Array.isArray(obj)) {
     return `Array(${obj.length}) [${obj.slice(0, 2).map((v) => summarise(v, depth + 1)).join(", ")}${obj.length > 2 ? ", ..." : ""}]`;
   }
   if (typeof obj === "object") {
-    const keys = Object.keys(obj);
-    const pairs = keys.slice(0, 4).map((k) => `${k}: ${summarise(obj[k], depth + 1)}`);
+    const keys = Object.keys(obj as object);
+    const pairs = keys.slice(0, 4).map((k) => `${k}: ${summarise((obj as Record<string, unknown>)[k], depth + 1)}`);
     return `{${pairs.join(", ")}${keys.length > 4 ? ", ..." : ""}}`;
   }
   return String(obj);
@@ -83,8 +83,9 @@ export const jsonTool = new Tool<JsonInput>({
         default:
           return `Unknown op: ${op}`;
       }
-    } catch (e: any) {
-      return `ERROR parsing JSON: ${e.message}`;
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      return `ERROR parsing JSON: ${errMsg}`;
     }
   },
 });

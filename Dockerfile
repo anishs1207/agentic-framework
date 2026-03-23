@@ -11,11 +11,3 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY . .
 
 CMD ["npm", "run", "dev"]
-
-# $ docker build -t anishsabharwal/agent-cli:latest .
-# docker run anishsabharwal/agent-cli:latest
-# it fails since the it needs rge .env GEMINI key here
-# docker run --env-file .env anishsabharwal/agent-cli:latest
-# to run in an intractive terminal
-# docker run -it --env-file .env anishsabharwal/agent-cli:latest
-# it works

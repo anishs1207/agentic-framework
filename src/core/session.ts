@@ -53,9 +53,9 @@ export function loadSession(id: string): SavedSession | null {
   try {
     const raw = JSON.parse(fs.readFileSync(p, "utf-8"));
     // Re-hydrate timestamps
-    raw.messages = (raw.messages ?? []).map((m: any) => ({
+    raw.messages = (raw.messages ?? []).map((m: Record<string, unknown>) => ({
       ...m,
-      timestamp: new Date(m.timestamp),
+      timestamp: new Date(m.timestamp as string),
     }));
     raw.stats.startTime = new Date(raw.stats.startTime);
     return raw as SavedSession;

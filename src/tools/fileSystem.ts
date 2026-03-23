@@ -93,8 +93,9 @@ export const fileSystemTool = new Tool<FileOp>({
         default:
           return `Unknown operation: ${op}`;
       }
-    } catch (err: any) {
-      return `ERROR: ${err.message}`;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      return `ERROR: ${errMsg}`;
     }
   },
 });

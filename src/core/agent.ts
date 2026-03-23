@@ -80,9 +80,10 @@ export class Agent {
 
       try {
         output = await this.llm.generate(prompt);
-      } catch (error: any) {
-        this.callbacks.onLLMError?.(error);
-        this.logger.error(`LLM failed: ${error.message}`);
+      } catch (error: unknown) {
+        const errObject = error instanceof Error ? error : new Error(String(error));
+        this.callbacks.onLLMError?.(errObject);
+        this.logger.error(`LLM failed: ${errObject.message}`);
         throw error;
       }
 
@@ -142,8 +143,8 @@ export class Agent {
           this.memory?.addMessage("tool", `[${toolName}] ${observation}`, { tool: toolName });
 
           scratchpad += `\nThought: ${parsed.thought || output}\nAction: ${toolName}\nAction Input: ${toolInput}\nObservation: ${observation}\n`;
-        } catch (error: any) {
-          const errMsg = `Tool execution error: ${error.message}`;
+        } catch (error: unknown) {
+          const errMsg = `Tool execution error: ${error instanceof Error ? error.message : String(error)}`;
           this.logger.error(errMsg);
           this.callbacks.onToolError?.(toolName, errMsg);
 

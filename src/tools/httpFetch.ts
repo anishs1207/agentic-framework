@@ -80,8 +80,9 @@ export const httpFetchTool = new Tool<HttpInput>({
   func: async ({ url, method, headers, body, timeout }) => {
     try {
       return await httpRequest(url, method ?? "GET", (headers ?? {}) as Record<string, string>, body, timeout ?? 10000);
-    } catch (err: any) {
-      return `ERROR: ${err.message}`;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      return `ERROR: ${errMsg}`;
     }
   },
 });

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { logger } from "./logger.js";
 
 // LLM Configuration 
@@ -13,7 +13,7 @@ export interface LLMConfig {
 
 // LLM Wrapper with Retry Logic
 export class LLM {
-  private model: any;
+  private model: GenerativeModel;
   private maxRetries: number;
   private retryDelayMs: number;
   modelName: string;
@@ -34,24 +34,28 @@ export class LLM {
   }
 
   async generate(prompt: string): Promise<string> {
-    let lastError: Error | null = null;
+    let lastError: unknown = null;
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const result = await this.model.generateContent(prompt);
         const response = result.response;
         return response.text();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
 
+        // Use type-aware access for error properties
+        const status = (error as { status?: number }).status;
+        const msg = (error as { message?: string }).message || String(error);
+
         // Don't retry on auth errors
-        if (error.status === 401 || error.status === 403) {
+        if (status === 401 || status === 403) {
           throw error;
         }
 
         if (attempt < this.maxRetries) {
           const delay = this.retryDelayMs * Math.pow(2, attempt - 1); // exponential backoff
-          logger.retry(attempt, this.maxRetries, error.message?.slice(0, 80) || "Unknown error");
+          logger.retry(attempt, this.maxRetries, msg.slice(0, 80) || "Unknown error");
           await this.sleep(delay);
         }
       }

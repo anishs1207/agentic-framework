@@ -5,12 +5,12 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Base Memory 
 export abstract class BaseMemory {
-  abstract addMessage(role: MessageRole, content: string, metadata?: Record<string, any>): void;
+  abstract addMessage(role: MessageRole, content: string, metadata?: Record<string, unknown>): void;
   abstract getMessages(): Message[];
   abstract getContext(): string;
   abstract clear(): void;
@@ -23,7 +23,7 @@ export abstract class BaseMemory {
 export class ConversationBufferMemory extends BaseMemory {
   private messages: Message[] = [];
 
-  addMessage(role: MessageRole, content: string, metadata?: Record<string, any>) {
+  addMessage(role: MessageRole, content: string, metadata?: Record<string, unknown>) {
     this.messages.push({
       role,
       content,
@@ -72,7 +72,7 @@ export class ConversationWindowMemory extends BaseMemory {
     this.windowSize = windowSize;
   }
 
-  addMessage(role: MessageRole, content: string, metadata?: Record<string, any>) {
+  addMessage(role: MessageRole, content: string, metadata?: Record<string, unknown>) {
     this.messages.push({
       role,
       content,
@@ -142,7 +142,7 @@ export class SummarizerMemory extends BaseMemory {
     this.summaryPrefix = options.summaryPrefix ?? "Earlier conversation summary:";
   }
 
-  addMessage(role: MessageRole, content: string, metadata?: Record<string, any>) {
+  addMessage(role: MessageRole, content: string, metadata?: Record<string, unknown>) {
     this.recentMessages.push({ role, content, timestamp: new Date(), metadata });
 
     // When we exceed the window, compress the oldest message into the summary

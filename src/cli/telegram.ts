@@ -74,17 +74,19 @@ export async function startTelegramBridge(agent: Agent): Promise<void> {
             : "");
 
         await bot.sendMessage(chatId, reply, { parse_mode: "Markdown" });
-      } catch (err: any) {
-        await bot.sendMessage(chatId, `❌ Error: ${err.message}`);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await bot.sendMessage(chatId, `❌ Error: ${errMsg}`);
       }
     });
 
-    bot.on("polling_error", (err) => {
+    bot.on("polling_error", (err: Error) => {
       console.log(theme.error(`\n  Telegram polling error: ${err.message}\n`));
     });
 
-  } catch (err: any) {
-    spinner.fail(theme.error(`  ✖ Failed to start Telegram bot: ${err.message}`));
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    spinner.fail(theme.error(`  ✖ Failed to start Telegram bot: ${errMsg}`));
   }
 }
 

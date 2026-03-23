@@ -61,7 +61,7 @@ export class AgentPool {
       registry = new ToolRegistry();
       for (const name of profile.tools) {
         const tool = allTools.get(name);
-        if (tool) (registry as any).tools.set(name, tool);
+        if (tool) (registry as ToolRegistry).tools.set(name, tool);
       }
     }
 
@@ -150,13 +150,14 @@ export class AgentPool {
         output: result.output,
       });
       return { agentId: spawned.id, agentName: spawned.name, result, durationMs: Date.now() - t0 };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
       spawned.status = "error";
-      globalBus.emitSync(AgentEvents.AGENT_ERROR, { agentId: spawned.id, error: err.message });
+      globalBus.emitSync(AgentEvents.AGENT_ERROR, { agentId: spawned.id, error: errMsg });
       return {
         agentId: spawned.id,
         agentName: spawned.name,
-        error: err.message,
+        error: errMsg,
         durationMs: Date.now() - t0,
       };
     }

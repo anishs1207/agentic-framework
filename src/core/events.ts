@@ -12,7 +12,7 @@ export interface EventRecord {
 }
 
 export class EventBus {
-  private listeners: Map<string, EventHandler<any>[]> = new Map();
+  private listeners: Map<string, EventHandler<unknown>[]> = new Map();
   private history: EventRecord[] = [];
   private maxHistory: number;
 
@@ -25,7 +25,7 @@ export class EventBus {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
-    this.listeners.get(type)!.push(handler as EventHandler<any>);
+    this.listeners.get(type)!.push(handler as EventHandler<unknown>);
 
     // Return unsubscribe function
     return () => this.off(type, handler);
@@ -35,7 +35,7 @@ export class EventBus {
   off<T = unknown>(type: string, handler: EventHandler<T>) {
     const handlers = this.listeners.get(type);
     if (!handlers) return;
-    const idx = handlers.indexOf(handler as EventHandler<any>);
+    const idx = handlers.indexOf(handler as EventHandler<unknown>);
     if (idx !== -1) handlers.splice(idx, 1);
   }
 

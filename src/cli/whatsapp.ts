@@ -13,6 +13,7 @@ import qrcode from "qrcode-terminal";
 import { theme, createSpinner } from "./ui.js";
 import type { Agent } from "../core/agent.js";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 let activeClient: any = null;
 
 export async function startWhatsAppBridge(agent: Agent): Promise<void> {
@@ -104,8 +105,9 @@ export async function startWhatsAppBridge(agent: Agent): Promise<void> {
 
       await msg.reply(reply);
       await msg.react("✅");
-    } catch (err: any) {
-      await msg.reply(`❌ Error: ${err.message}`);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      await msg.reply(`❌ Error: ${errMsg}`);
       await msg.react("❌");
     }
   });
@@ -113,8 +115,9 @@ export async function startWhatsAppBridge(agent: Agent): Promise<void> {
   try {
     spinner.text = "Starting WhatsApp session (opens Chromium)…";
     await client.initialize();
-  } catch (err: any) {
-    spinner.fail(theme.error(`  ✖ WhatsApp init failed: ${err.message}`));
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    spinner.fail(theme.error(`  ✖ WhatsApp init failed: ${errMsg}`));
     activeClient = null;
   }
 }

@@ -7,7 +7,7 @@ dotenv.config();
 
 import {
   LLM, Agent, ToolRegistry, ConversationWindowMemory, logger,
-  agentProfileRegistry, AgentPool, Scheduler, parseSchedule,
+  AgentProfileRegistry, agentProfileRegistry, AgentPool, Scheduler, parseSchedule,
   globalBus, AgentEvents,
   saveSession, listSessions, deleteSession, generateSessionId,
   promptLibrary, ExecutionTracer,
@@ -264,8 +264,8 @@ function buildCronHandler(
         theme.muted("  Cron result: ") +
         (job.lastResult ?? "").slice(0, 200) + "\n"
       );
-    } catch (err: any) {
-      job.lastError = err.message;
+    } catch (err: unknown) {
+      job.lastError = err instanceof Error ? err.message : String(err);
     }
   };
 }
@@ -333,9 +333,7 @@ async function main() {
 
   // ── Seed built-in profiles on first run ───────────────────────────────────
   if (agentProfileRegistry.list().length === 0) {
-    for (const preset of agentProfileRegistry.constructor === Function
-      ? [] // safety fallback
-      : (agentProfileRegistry as any).constructor?.presets?.() ?? []) {
+    for (const preset of AgentProfileRegistry.presets()) {
       agentProfileRegistry.create(preset);
     }
     // Manually seed presets
@@ -394,7 +392,7 @@ async function main() {
   }
 
   // ── Global event listeners ─────────────────────────────────────────────────
-  globalBus.on(AgentEvents.AGENT_COMPLETED, (payload: any) => {
+  globalBus.on(AgentEvents.AGENT_COMPLETED, (payload: Record<string, unknown>) => {
     if (verbose) logger.info(`✔ Agent "${payload.agentId}" completed`);
   });
 
@@ -590,8 +588,9 @@ async function main() {
         try {
           exportConversation(memory, stats, filepath);
           console.log("\n" + theme.success(`  ✔ Exported to: ${filepath}\n`));
-        } catch (err: any) {
-          console.log("\n" + theme.error(`  ✖ Export failed: ${err.message}\n`));
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.log("\n" + theme.error(`  ✖ Export failed: ${errMsg}\n`));
         }
         continue;
       }
@@ -914,8 +913,9 @@ async function main() {
         console.log("\n" + theme.accent(`  ▶ Running "${job.name}" immediately…\n`));
         try {
           await scheduler.runNow(job.id);
-        } catch (err: any) {
-          console.log("\n" + theme.error(`  ✖ ${err.message}\n`));
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.log(theme.error(`  ✖ Failed to start ${target}: ${errMsg}\n`));
         }
         continue;
       }
@@ -1111,7 +1111,11 @@ async function main() {
             const r = await agent.run(q);
             sp.stop();
             console.log(theme.muted("  → ") + renderAnswer(r.output).trim().slice(0, 300));
-          } catch (e: any) { sp.fail(); console.log(theme.error(`  ✖ ${e.message}`)); }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            sp.fail();
+            console.log(theme.error(`  ✖ ${errorMsg}`));
+          }
         }
         console.log("\n" + theme.success("  ✔ Batch complete.\n"));
         continue;
@@ -1228,11 +1232,12 @@ async function main() {
       stats.totalQueries++;
       stats.totalIterations += result.iterations;
       stats.totalDurationMs += Date.now() - startTime;
-    } catch (err: any) {
-      if (spinner) spinner.fail();
-      if (tracer) { tracer.finish("", false, err.message); tracer.save(); }
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      if (spinner) (spinner as { fail(text?: string): void }).fail();
+      if (tracer) { tracer.finish("", false, errorMsg); tracer.save(); }
       stats.errors++;
-      console.log("\n" + theme.error(`  ✖ ${err.message}\n`));
+      console.log("\n" + theme.error(`  ✖ ${errorMsg}\n`));
     }
 
   }

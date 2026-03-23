@@ -178,10 +178,11 @@ export class Scheduler {
     try {
       await this.handler(job);
       logger.info(`✔  Cron "${job.name}" completed`);
-    } catch (err: any) {
-      job.lastError = err.message;
-      globalBus.emitSync(AgentEvents.CRON_ERROR, { jobId: job.id, error: err.message });
-      logger.error(`Cron "${job.name}" failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      job.lastError = errMsg;
+      globalBus.emitSync(AgentEvents.CRON_ERROR, { jobId: job.id, error: errMsg });
+      logger.error(`Cron "${job.name}" failed: ${errMsg}`);
     }
   }
 }

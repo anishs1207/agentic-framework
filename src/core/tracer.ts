@@ -110,7 +110,7 @@ export class ExecutionTracer {
     if (!this.currentStep) return;
     const now = Date.now();
     const step: TraceStep = {
-      ...(this.currentStep as any),
+      ...(this.currentStep as TraceStep),
       endMs: now,
       durationMs: now - this.stepStart,
     };

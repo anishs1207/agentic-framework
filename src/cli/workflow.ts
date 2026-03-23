@@ -210,9 +210,10 @@ export async function runWorkflow(
         spinner.succeed(theme.success(`${stepLabel} complete (${result.iterations} iter)`));
         console.log(theme.muted("  Output: ") + lastOutput.slice(0, 200));
       }
-    } catch (err: any) {
-      spinner.fail(theme.error(`${stepLabel} failed: ${err.message}`));
-      lastOutput = `ERROR: ${err.message}`;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      spinner.fail(theme.error(`${stepLabel} failed: ${errMsg}`));
+      lastOutput = `ERROR: ${errMsg}`;
     }
 
     if (!step.chainOutput && i < wf.steps.length - 1) lastOutput = "";

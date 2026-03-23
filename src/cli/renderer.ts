@@ -32,7 +32,7 @@ export interface TableColumn {
   color?: (val: string) => string;
 }
 
-export function printTable<T extends Record<string, any>>(
+export function printTable<T extends Record<string, unknown>>(
   rows: T[],
   columns: TableColumn[],
   title?: string
