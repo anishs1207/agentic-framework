@@ -1,0 +1,86 @@
+version: '3'
+
+tasks:
+  up:
+    desc: Start all services in detached mode
+    cmds:
+      - docker-compose up -d
+
+  down:
+    desc: Stop all services
+    cmds:
+      - docker-compose down
+
+  logs:
+    desc: Follow logs from all services
+    cmds:
+      - docker-compose logs -f
+
+  build:
+    desc: Rebuild all images
+    cmds:
+      - docker-compose build --parallel
+
+  restart:
+    desc: Restart all services
+    cmds:
+      - task: down
+      - task: up
+
+  # Individual Service Management
+  backend:
+    desc: Start image-memory-backend separately
+    cmds:
+      - docker-compose up -d image-memory-backend
+
+  frontend:
+    desc: Start image-memory-frontend separately
+    cmds:
+      - docker-compose up -d image-memory-frontend
+
+  docs:
+    desc: Start image-memory-docs separately
+    cmds:
+      - docker-compose up -d image-memory-docs
+
+  db:
+    desc: Start postgres_db
+    cmds:
+      - docker-compose up -d db
+
+  redis:
+    desc: Start redis_cache
+    cmds:
+      - docker-compose up -d redis
+
+  # Log Following
+  backend-logs:
+    desc: Follow image-memory-backend logs
+    cmds:
+      - docker-compose logs -f image-memory-backend
+
+  frontend-logs:
+    desc: Follow image-memory-frontend logs
+    cmds:
+      - docker-compose logs -f image-memory-frontend
+
+  docs-logs:
+    desc: Follow image-memory-docs logs
+    cmds:
+      - docker-compose logs -f image-memory-docs
+
+  # Cleanup & Utility
+  clean:
+    desc: Remove all containers, networks, and volumes (Fresh start)
+    cmds:
+      - docker-compose down -v --remove-orphans
+
+  status:
+    desc: Check the status of all services
+    cmds:
+      - docker-compose ps
+
+  ps:
+    desc: Alias for status
+    cmds:
+      - task: status

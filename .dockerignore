@@ -1,0 +1,58 @@
+# Version control
+.git
+.github
+.husky
+.gitignore
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project documentation & notes
+NOTES.md
+GEMINI.md
+README.md
+CONTRIBUTING.md
+LICENSE
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Custom local directories (e.g. system logs, AI context, etc)
+.claude/
+updates/
+plugins/
+agent-profiles/
+testing-video/
+images/
+image-memory/
+
+# Lock files (optional, depending on your build strategy. Often you DO want lock files for reproducible builds, but if you don't copy them you might ignore them. We will KEEP package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

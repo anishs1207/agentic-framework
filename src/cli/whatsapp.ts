@@ -32,8 +32,8 @@ export async function startWhatsAppBridge(agent: Agent): Promise<void> {
   try {
     // Dynamic import to avoid startup cost when WhatsApp isn't used
     const wwjs = await import("whatsapp-web.js") as any;
-    Client = wwjs.Client;
-    LocalAuth = wwjs.LocalAuth;
+    Client = wwjs.Client || wwjs.default?.Client;
+    LocalAuth = wwjs.LocalAuth || wwjs.default?.LocalAuth;
   } catch {
     console.log(
       theme.error("  ✖ whatsapp-web.js not available.") + "\n" +

@@ -47,13 +47,6 @@ about how you have approched it and the journey each time
 * Override default behavior if skill specifies constraints
 * Combine multiple skills if needed
 
-## Skill Selection Heuristics
-
-* If task involves backend → use `backend/*` skills
-* If task involves frontend → use `frontend/*` skills
-* If debugging → use `debugging.md`
-* If unclear → ask which skill to use
-
 ## Output Rules
 
 * Follow format defined inside skill
