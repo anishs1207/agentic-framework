@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy the rest of the application code
 COPY . .
@@ -20,7 +20,7 @@ RUN npx prisma generate
 EXPOSE 3001
 
 # Start the application in development mode
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start"]
 
 # Build stage for production
 FROM node:20-alpine AS build
@@ -29,8 +29,8 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-# Copy node_modules from development stage
-COPY --from=development /usr/src/app/node_modules ./node_modules
+# Install all dependencies including dev for building
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
@@ -38,19 +38,21 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# Prune dev dependencies
-RUN npm prune --production
-
 # Production stage
 FROM node:20-alpine AS production
 
 WORKDIR /usr/src/app
 
+# Copy package files and install only production dependencies
+COPY package*.json ./
+RUN npm install --omit=dev --legacy-peer-deps
+
 # Copy only the necessary files from the build stage
 COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/package*.json ./
 COPY --from=build /usr/src/app/prisma ./prisma
+
+# Generate Prisma client in production stage
+RUN npx prisma generate
 
 # Expose the application port
 EXPOSE 3001
