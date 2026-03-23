@@ -258,7 +258,7 @@ export function printStats(stats: SessionStats) {
 // Workflow card
 // ──────────────────────────────────────────────────────────────────────────────
 export function printWorkflowCard(name: string, steps: string[], description?: string) {
-  let content = (description ? theme.muted(description) + "\n\n" : "") +
+  const content = (description ? theme.muted(description) + "\n\n" : "") +
     theme.accent.bold("Steps:\n") +
     steps.map((s, i) => `  ${theme.primary.bold(`${i + 1}.`)} ${s}`).join("\n");
 

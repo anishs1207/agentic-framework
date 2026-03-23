@@ -1,0 +1,99 @@
+Warning: React version not specified in eslint-plugin-react settings. See https://github.com/jsx-eslint/eslint-plugin-react#configuration .
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\cli\renderer.ts
+  35:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\cli\telegram.ts
+  77:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\cli\ui.ts
+  261:7  error  'content' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\cli\whatsapp.ts
+   16:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   30:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\cli\workflow.ts
+  213:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  246:13  error  'i' is defined but never used             @typescript-eslint/no-unused-vars
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\agent.ts
+    7:28  error  'defaultLogger' is defined but never used  @typescript-eslint/no-unused-vars
+   83:23  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  145:25  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\events.ts
+  15:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\llm.ts
+  16:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\memory.ts
+    8:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   13:85  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   26:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\multi-agent.ts
+   64:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\plugins.ts
+  17:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\scheduler.ts
+  181:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\session.ts
+  56:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\core\tracer.ts
+  113:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\index.ts
+    12:16  error  'loadSession' is defined but never used    @typescript-eslint/no-unused-vars
+    16:40  error  'SavedSession' is defined but never used   @typescript-eslint/no-unused-vars
+    31:3   error  'saveWorkflow' is defined but never used   @typescript-eslint/no-unused-vars
+    31:22  error  'Workflow' is defined but never used       @typescript-eslint/no-unused-vars
+    35:15  error  'printKeyValue' is defined but never used  @typescript-eslint/no-unused-vars
+    35:30  error  'printTimeline' is defined but never used  @typescript-eslint/no-unused-vars
+    36:33  error  'progressBar' is defined but never used    @typescript-eslint/no-unused-vars
+    36:52  error  'divider' is defined but never used        @typescript-eslint/no-unused-vars
+   268:19  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   339:34  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   398:55  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   594:23  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   918:23  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  1115:23  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  1232:19  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\tools\fileSystem.ts
+  96:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\tools\getTime.ts
+  8:16  error  '_input' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\tools\httpFetch.ts
+  83:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Anish\Documents\building\22-agentic-framework\src\tools\jsonTool.ts
+  17:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 56 problems (56 errors, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

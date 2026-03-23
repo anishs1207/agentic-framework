@@ -80,7 +80,22 @@ tasks:
     cmds:
       - docker-compose ps
 
-  ps:
-    desc: Alias for status
+  # Development & Quality
+  lint:
+    desc: Run linting for all services and root
     cmds:
-      - task: status
+      - npm run lint
+      - cd image-memory/backend && npm run lint
+      - cd image-memory/frontend && npm run lint
+
+  typecheck:
+    desc: Run typechecking for all services and root
+    cmds:
+      - npm run typecheck
+      - cd image-memory/backend && npm run build
+      - cd image-memory/frontend && npm run build
+
+  test:
+    desc: Run unit tests for backend
+    cmds:
+      - cd image-memory/backend && npm run test

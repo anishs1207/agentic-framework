@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  build-and-run:
-    name: Typecheck & Run
+  root-checks:
+    name: Root Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
   image-memory-backend:
     name: Check Image Memory Backend

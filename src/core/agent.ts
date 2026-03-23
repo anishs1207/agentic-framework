@@ -4,7 +4,7 @@ import { BaseMemory } from "./memory.js";
 import { PromptTemplate, REACT_SYSTEM_PROMPT } from "./prompt.js";
 import { parseReActOutput, isFinalAnswer, isToolCall } from "./parser.js";
 import { AgentCallbacks, defaultCallbacks } from "./callbacks.js";
-import { Logger, logger as defaultLogger } from "./logger.js";
+import { Logger } from "./logger.js";
 
 export interface AgentConfig {
   llm: LLM;

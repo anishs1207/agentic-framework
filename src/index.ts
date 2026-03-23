@@ -9,11 +9,11 @@ import {
   LLM, Agent, ToolRegistry, ConversationWindowMemory, logger,
   agentProfileRegistry, AgentPool, Scheduler, parseSchedule,
   globalBus, AgentEvents,
-  saveSession, loadSession, listSessions, deleteSession, generateSessionId,
+  saveSession, listSessions, deleteSession, generateSessionId,
   promptLibrary, ExecutionTracer,
   loadPlugins, listPluginFiles,
 } from "./core/index.js";
-import type { AgentCallbacks, CronJob, SavedSession } from "./core/index.js";
+import type { AgentCallbacks, CronJob } from "./core/index.js";
 
 import {
   weatherTool, calculatorTool, getTimeTool, wikipediaTool,
@@ -28,12 +28,11 @@ import {
 
 import {
   buildWorkflow, runWorkflow, listWorkflows, loadWorkflowByName,
-  saveWorkflow, type Workflow,
 } from "./cli/workflow.js";
 
 import {
-  printTable, printKeyValue, printTimeline, renderAnswer,
-  estimateTokens, estimateCost, progressBar, pill, divider,
+  printTable, renderAnswer,
+  estimateTokens, estimateCost, pill,
 } from "./cli/renderer.js";
 
 import { startTelegramBridge, stopTelegramBridge, isTelegramActive } from "./cli/telegram.js";

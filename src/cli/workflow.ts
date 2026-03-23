@@ -243,7 +243,7 @@ export function listWorkflows() {
     printWorkflowCard(
       wf.name,
       wf.steps.map(
-        (s, i) =>
+        (s) =>
           `[${s.type}] ${s.tool ? s.tool + ": " : ""}${s.instruction.slice(0, 50) || "(chained)"}`
       ),
       wf.description
