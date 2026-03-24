@@ -3,3 +3,4 @@ dist
 .env
 NOTES.md
 /updates
+k8s/agent-cli/Secret.yml
