@@ -18,6 +18,7 @@ export function estimateTokens(text: string): number {
 export function estimateCost(inputTokens: number, outputTokens: number): string {
   // Gemini 2.5 Flash: ~$0.075 / 1M input, ~$0.30 / 1M output
   const cost = (inputTokens * 0.075 + outputTokens * 0.30) / 1_000_000;
+  if (inputTokens === 0 && outputTokens === 0) return "$0.00000";
   if (cost < 0.0001) return "< $0.0001";
   return `$${cost.toFixed(5)}`;
 }
@@ -204,6 +205,6 @@ export function pill(text: string, color: "primary" | "success" | "error" | "war
 
 // ─── Divider ─────────────────────────────────────────────────────────────────
 
-export function divider(char = "─", width = 60): string {
+export function divider(char = "━", width = 60): string {
   return theme.muted("  " + char.repeat(width));
 }

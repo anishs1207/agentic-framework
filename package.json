@@ -7,7 +7,8 @@
     "dev": "npx tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@eslint/js": "^9.39.4",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.3.3",
+    "@vitest/coverage-v8": "^4.1.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.4.0",
@@ -23,7 +25,8 @@
     "jiti": "^2.6.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.0"
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^4.1.1"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

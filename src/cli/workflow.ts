@@ -50,13 +50,12 @@ export function loadWorkflows(): Workflow[] {
     .map((f) => JSON.parse(fs.readFileSync(path.join(WORKFLOWS_DIR, f), "utf-8"))) as Workflow[];
 }
 
-export function loadWorkflowByName(name: string): Workflow | null {
+export function loadWorkflowByName(name: string): Workflow | undefined {
+  if (!name) return undefined;
   const workflows = loadWorkflows();
-  return (
-    workflows.find(
-      (w) => w.name.toLowerCase() === name.toLowerCase() ||
-             w.name.toLowerCase().replace(/\s+/g, "-") === name.toLowerCase()
-    ) ?? null
+  return workflows.find(
+    (w) => w.name.toLowerCase() === name.toLowerCase() ||
+           w.name.toLowerCase().replace(/\s+/g, "-") === name.toLowerCase()
   );
 }
 

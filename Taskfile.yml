@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   up:
@@ -99,3 +99,7 @@ tasks:
     desc: Run unit tests for backend
     cmds:
       - cd image-memory/backend && npm run test
+  agent-cli:
+    desc: Apply the k8 resource manifests for the agent-cli
+    cmds:
+      - kubectl apply -f k8s/agents-cli

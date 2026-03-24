@@ -1,0 +1,23 @@
+# Deployment: used to always run the cli
+# manages a set of pods to run an appln workload
+apiVersion: apps/v1
+kind: Deployement
+metadata:
+  name: agent-cli
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-cli
+  template:
+    metadata:
+      labels:
+        app: agent-cli
+    spec:
+      containers:
+        - name: agent-cli
+          # this is the image from dockerhub used here
+          image: anishsabharwal/agent-cli:latest
+          envFrom:
+            - secretRef:
+                name: agent-cli-secret

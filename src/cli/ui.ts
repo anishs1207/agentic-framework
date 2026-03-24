@@ -233,7 +233,7 @@ export function printStats(stats: SessionStats) {
     theme.muted("Avg resp:     ") + theme.success(avgDuration + "s") + "\n" +
     theme.muted("Errors:       ") + (stats.errors > 0 ? theme.error(String(stats.errors)) : theme.success("0"));
 
-  if (Object.keys(stats.toolCallCounts).length > 0) {
+  if (stats.toolCallCounts && Object.keys(stats.toolCallCounts).length > 0) {
     content += "\n\n" + theme.accent.bold("Tool Usage:");
     const sorted = Object.entries(stats.toolCallCounts).sort(([, a], [, b]) => b - a);
     for (const [tool, count] of sorted) {
