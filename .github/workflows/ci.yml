@@ -46,9 +46,7 @@ jobs:
           cache: npm
           cache-dependency-path: "./image-memory/backend/package-lock.json"
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
-        env:
-          HUSKY: 0
+        run: npm install --legacy-peer-deps --ignore-scripts
       - name: Generate Prisma Client
         run: npx prisma generate
       - name: Lint

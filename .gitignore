@@ -4,3 +4,7 @@ dist
 NOTES.md
 /updates
 k8s/agent-cli/Secret.yml
+coverage/
+test_final_*.txt
+test_redir.txt
+coverage_final.txt

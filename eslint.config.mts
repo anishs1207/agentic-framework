@@ -13,7 +13,8 @@ export default defineConfig([
       "**/.docusaurus/**",
       "image-memory/**",
       "testing-video/**",
-      "updates/**"
+      "updates/**",
+      "coverage/**"
     ],
   },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },

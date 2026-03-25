@@ -53,7 +53,7 @@ export class AgentPool {
 
   /** Spawn a new agent from a profile */
   spawn(profile: AgentProfile, allTools: ToolRegistry): SpawnedAgent {
-    const id = profile.id + "-" + Date.now().toString(36);
+    const id = `${profile.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
     // Build a filtered registry if profile specifies tools
     let registry = allTools;

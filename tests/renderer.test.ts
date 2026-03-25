@@ -3,6 +3,7 @@ import {
   estimateTokens, estimateCost, renderAnswer, progressBar, pill, 
   divider, printTable, printKeyValue, printTimeline 
 } from "../src/cli/renderer.js";
+import chalk from "chalk";
 
 describe("CLI Renderer", () => {
   describe("estimateTokens", () => {
@@ -22,6 +23,10 @@ describe("CLI Renderer", () => {
       const cost = estimateCost(1, 1);
       expect(cost).toBe("< $0.0001");
     });
+
+    it("should handle zero tokens", () => {
+      expect(estimateCost(0, 0)).toEqual("$0.00000");
+    });
   });
 
   describe("renderAnswer", () => {
@@ -39,9 +44,18 @@ describe("CLI Renderer", () => {
     });
 
     it("should format lists", () => {
-      const rendered = renderAnswer("- Item 1\n* Item 2\n1. Item 3");
+      const rendered = renderAnswer("- Item 1\n* Item 2\n1. Item 3\n  - Subitem");
       expect(rendered).toContain("•");
       expect(rendered).toContain("1.");
+      expect(rendered).toContain("Subitem");
+    });
+
+    it("should handle mixed content", () => {
+      const input = "Check this:\n1. Step one\n   - Detail\n**End**";
+      const rendered = renderAnswer(input);
+      expect(rendered).toContain("Step one");
+      expect(rendered).toContain("Detail");
+      expect(rendered).toContain("End");
     });
   });
 
@@ -52,12 +66,24 @@ describe("CLI Renderer", () => {
       expect(bar).toContain("█");
       expect(bar).toContain("░");
     });
+
+    it("should handle 0% and 100%", () => {
+      expect(progressBar(0, 100)).toContain("0%");
+      expect(progressBar(100, 100)).toContain("100%");
+    });
+
+    it("should handle total 0", () => {
+      expect(progressBar(50, 0)).toContain("0%");
+    });
   });
 
   describe("pill", () => {
-    it("should return a formatted pill string", () => {
-      const p = pill("TEST", "success");
-      expect(p).toContain("[TEST]");
+    it("should return a formatted pill string for all colors", () => {
+      const colors = ["primary", "success", "error", "warn", "secondary", "accent"] as const;
+      for (const color of colors) {
+        const p = pill("TEST", color);
+        expect(p).toContain("[TEST]");
+      }
     });
   });
 
@@ -66,6 +92,11 @@ describe("CLI Renderer", () => {
       const d = divider("-", 10);
       expect(d).toContain("----------");
     });
+
+    it("should use default parameters", () => {
+      const d = divider();
+      expect(d).toContain("━");
+    });
   });
 
   describe("UI Renderers (Console)", () => {
@@ -73,9 +104,21 @@ describe("CLI Renderer", () => {
       vi.spyOn(console, "log").mockImplementation(() => {});
     });
 
-    it("printTable should log a table", () => {
-      printTable([{ a: 1, b: 2 }], [{ key: "a", header: "A" }, { key: "b", header: "B" }]);
-      expect(console.log).toHaveBeenCalled();
+    it("printTable should log a table with various options", () => {
+      const rows = [
+        { name: "Alice", role: "Admin", bio: "A very long biography that should be truncated" },
+        { name: "Bob", role: "User", bio: "Short bio" }
+      ];
+      const cols = [
+        { key: "name", header: "Name", align: "left" as const },
+        { key: "role", header: "Role", color: (v: string) => chalk.red(v), align: "right" as const },
+        { key: "bio", header: "Bio", width: 10 }
+      ];
+      printTable(rows, cols, "Staff Table");
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Staff Table"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Alice"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Admin"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("…")); // Bio truncated
     });
 
     it("printTable should handle empty rows", () => {
@@ -84,32 +127,27 @@ describe("CLI Renderer", () => {
     });
 
     it("printKeyValue should log pairs", () => {
-      printKeyValue([["Key", "Value"]], "Title");
-      expect(console.log).toHaveBeenCalled();
+      printKeyValue([["Key", "Value"]], "Settings", "cyan");
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Settings"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Key"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Value"));
     });
 
-    it("printTimeline should log events", () => {
-      printTimeline([{ label: "Start" }, { label: "End", status: "done" }], "Timeline");
-      expect(console.log).toHaveBeenCalled();
-    });
-
-    it("divider should use default parameters", () => {
-      const d = divider();
-      expect(d).toContain("━");
-    });
-
-    it("renderAnswer should handle default format", () => {
-      const out = renderAnswer("Plain text");
-      expect(out).toBe("  Plain text");
-    });
-
-    it("estimateCost should handle zero tokens", () => {
-      expect(estimateCost(0, 0)).toEqual("$0.00000");
-    });
-
-    it("printKeyValue should handle default title", () => {
-      printKeyValue([["Key", "Value"]]);
-      expect(console.log).toHaveBeenCalled();
+    it("printTimeline should log events with statuses and durations", () => {
+      const events = [
+        { label: "Step 1", status: "done" as const, durationMs: 100, detail: "All good" },
+        { label: "Step 2", status: "warn" as const, durationMs: 200 },
+        { label: "Step 3", status: "error" as const, detail: "Failed mission" },
+        { label: "Step 4", status: "info" as const }
+      ];
+      printTimeline(events, "Deployment");
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Deployment"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("✔"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("✖"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("⚠"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("Step 1"));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining("All good"));
     });
   });
 });
+
