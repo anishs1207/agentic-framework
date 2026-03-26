@@ -14,7 +14,8 @@ export default defineConfig([
       "image-memory/**",
       "testing-video/**",
       "updates/**",
-      "coverage/**"
+      "coverage/**",
+      ".agents/**"  // vendored gstack skill (Bun-based, not part of this project)
     ],
   },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },

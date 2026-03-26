@@ -1,7 +1,7 @@
 # Deployment: used to always run the cli
 # manages a set of pods to run an appln workload
 apiVersion: apps/v1
-kind: Deployement
+kind: Deployment
 metadata:
   name: agent-cli
 spec:
@@ -18,7 +18,9 @@ spec:
         - name: agent-cli
           # this is the image from dockerhub used here by default
           # pulls the image if not present locally
-          image: anishsabharwal/agent-cli:latest
+          image: agent-cli
+          imagePullPolicy: Never
+          # to ensure it uses the local k8 kind cluster
           envFrom:
             - secretRef:
                 name: agent-cli-secret

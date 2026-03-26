@@ -273,8 +273,9 @@ function buildCronHandler(
 // ──────────────────────────────────────────────────────────────────────────────
 // Main
 // ──────────────────────────────────────────────────────────────────────────────
-async function main() {
+export async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
+  // console.log(`[DEBUG] apiKey: ${apiKey}`); // Commented out for now or use logger
 
   if (!apiKey || apiKey === "your_gemini_api_key_here") {
     console.log(
@@ -445,6 +446,7 @@ async function main() {
     if (!trimmed) continue;
 
     // ── Command dispatch ─────────────────────────────────────────────────────────────
+    // console.log(`[DEBUG] CMD: ${trimmed}`);
     if (trimmed.startsWith("/")) {
       const rawParts = trimmed.split(/\s+/);
       const rawCmd   = rawParts[0].toLowerCase();
@@ -1243,7 +1245,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(theme.error("Fatal: " + err.message));
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== "test") {
+  main().catch((err) => {
+    console.error(theme.error("Fatal: " + err.message));
+    process.exit(1);
+  });
+}

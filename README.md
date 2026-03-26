@@ -5,18 +5,6 @@
 ![alt text](/images/image.png)
 
 
-```
-  ___  __ _ ___ _ __  | |_(_) |______ | |
- / _ \/ _` / _ \ '_ \| __| | / / __| | |
-|  __/ (_| |  __/ | | | |_| |   < (_| | |___
- \___|\__, \___|_| |_|\__|_|_|\_\___| |_____|
-      |___/
-
-  v2.0  •  Powered by Gemini  •  ReAct • Tools • Memory
-  Multi-Agent Swarms  •  Cron Scheduler  •  WhatsApp & Telegram
-```
-
-
 ---
 
 ## Quick Start

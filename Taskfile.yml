@@ -102,4 +102,72 @@ tasks:
   agent-cli:
     desc: Apply the k8 resource manifests for the agent-cli
     cmds:
-      - kubectl apply -f k8s/agents-cli
+      - kubectl apply -f k8s/agent-cli
+  nodes:
+    desc: Get the nodes in the cluster
+    cmds:
+      - kubectl get nodes
+  pods:
+    desc: Get the pods in the cluster
+    cmds:
+      - kubectl get pods
+
+  cli:
+    desc: Run the agent CLI locally
+    cmds:
+      - npm run dev
+
+  # Docker Service Management
+  build-cli:
+    desc: Build the agent-cli image
+    cmds:
+      - docker-compose build agent-cli
+
+  run-cli:
+    desc: Run the agent-cli in a Docker container (Interactive)
+    cmds:
+      - docker-compose run --rm agent-cli
+
+  build-backend:
+    desc: Build the image-memory-backend image
+    cmds:
+      - docker-compose build image-memory-backend
+
+  run-backend:
+    desc: Run the image-memory-backend separately in Docker
+    cmds:
+      - docker-compose up -d image-memory-backend
+
+  build-frontend:
+    desc: Build the image-memory-frontend image
+    cmds:
+      - docker-compose build image-memory-frontend
+
+  run-frontend:
+    desc: Run the image-memory-frontend separately in Docker
+    cmds:
+      - docker-compose up -d image-memory-frontend
+
+  build-docs:
+    desc: Build the image-memory-docs image
+    cmds:
+      - docker-compose build image-memory-docs
+
+  run-docs:
+    desc: Run the image-memory-docs separately in Docker
+    cmds:
+      - docker-compose up -d image-memory-docs
+
+  run-db:
+    desc: Start postgres_db in Docker
+    cmds:
+      - docker-compose up -d db
+
+  run-redis:
+    desc: Start redis_cache in Docker
+    cmds:
+      - docker-compose up -d redis
+  add-cli-to-kind:
+    desc: Add the agent-cli image to kind
+    cmds:
+      - kind load docker-image agent-cli

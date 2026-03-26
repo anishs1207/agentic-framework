@@ -1,10 +1,15 @@
 node_modules
 dist
+
 .env
+
 NOTES.md
+
 /updates
 k8s/agent-cli/Secret.yml
 coverage/
-test_final_*.txt
-test_redir.txt
-coverage_final.txt
+
+# ignore the gstack coding stack used here
+.agents/
+
+notes/
