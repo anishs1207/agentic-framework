@@ -9,7 +9,4 @@ NOTES.md
 k8s/agent-cli/Secret.yml
 coverage/
 
-# ignore the gstack coding stack used here
-.agents/
-
 notes/

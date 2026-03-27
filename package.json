@@ -8,7 +8,10 @@
     "typecheck": "tsc --noEmit",
     "prepare": "husky install || true",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cy:run": "cd image-memory && cypress run",
+    "cy:open": "cd image-memory && cypress open",
+    "test:e2e:image-memory": "task up && sleep 10 && npm run cy:run & task down"
   },
   "keywords": [],
   "author": "",
