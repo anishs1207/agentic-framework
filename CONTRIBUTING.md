@@ -1,188 +1,112 @@
-# Contributing to Agentic Framework
+# Contributing to the Agentic Ecosystem
 
-Thanks for taking the time to contribute! This document covers everything you need to get started.
-
----
-
-## Table of Contents
-
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-- [Adding a New Tool](#adding-a-new-tool)
-- [Code Style](#code-style)
-- [Commit Messages](#commit-messages)
-- [Pull Request Process](#pull-request-process)
+Thanks for taking the time to contribute! This project has grown into an ecosystem of agents and image memory services. This document covers everything you need to get started.
 
 ---
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v18 or higher
-- npm v9 or higher
-
-### Setup
-
-```bash
-# Clone the repo
-git clone https://github.com/anishs1207/agentic-framework.git
-cd agentic-framework
-
-# Install dependencies
-npm install
-
-# Copy the environment sample and fill in your API keys
-cp .env.sample .env
-```
-
-### Running the agent
-
-```bash
-npm run dev
-```
+- **Node.js**: v20 or higher
+- **Docker & Docker Compose**: For running the Image Memory system and DBs.
+- **Task**: For orchestrating services (install via `npm install -g @go-task/cli` or your package manager).
+- **Google Gemini API Key**: [Get one here](https://aistudio.google.com/apikey).
 
 ---
 
 ## Project Structure
 
 ```
-src/
-├── core/
-│   ├── agent.ts        # ReAct loop — the heart of the framework
-│   ├── callbacks.ts    # Lifecycle hooks (onToolCall, onThought, etc.)
-│   ├── llm.ts          # Gemini LLM wrapper
-│   ├── logger.ts       # Coloured console logger
-│   ├── memory.ts       # Conversation / scratchpad memory
-│   ├── parser.ts       # LLM output parser (Thought / Action / Answer)
-│   ├── prompt.ts       # System prompt builder
-│   └── tool.ts         # Tool class, ToolRegistry, Zod validation helpers
-└── tools/
-    ├── calculator.ts
-    ├── getTime.ts
-    ├── randomNumber.ts
-    ├── stringUtils.ts
-    ├── weather.ts
-    └── wikipedia.ts
+.
+├── src/                  # AgenticCLI (Core CLI)
+├── image-memory/         # Image Memory System (Backend/Frontend)
+├── k8s/                  # Kubernetes Manifests
+├── plugins/              # Dynamic Tool Plugins
+└── Taskfile.yml          # Ecosystem Orchestration
 ```
 
 ---
 
 ## Development Workflow
 
-1. **Create a feature branch** off `main`:
-   ```bash
-   git checkout -b feat/your-feature-name
-   ```
+### 1. The Whole Ecosystem
+To start everything for local development:
+```bash
+task up
+```
 
-2. **Make your changes** and verify TypeScript compiles without errors:
-   ```bash
-   npx tsc --noEmit
-   ```
+To run only the CLI:
+```bash
+task cli
+```
 
-3. **Run the agent** to do a quick end-to-end sanity check:
-   ```bash
-   npm run dev
-   ```
+### 2. Feature Branches
+1.  **Create a feature branch** off `main`:
+    ```bash
+    git checkout -b feat/your-feature-name
+    ```
 
-4. **Format your code** with Prettier:
-   ```bash
-   npx prettier --write "src/**/*.ts"
-   ```
+2.  **Make your changes** and verify TypeScript compiles:
+    ```bash
+    task typecheck
+    ```
 
-5. **Commit and push**, then open a Pull Request.
+3.  **Run Linting**:
+    ```bash
+    task lint
+    ```
+
+4.  **Format your code**:
+    ```bash
+    npx font-prettier --write "**/*.ts"
+    ```
+
+5.  **Commit and push**, then open a Pull Request.
 
 ---
 
-## Adding a New Tool
+## Adding a New Tool (CLI)
 
-All tools live in `src/tools/`. Each tool is an instance of the `Tool` class exported from `src/core/tool.ts`.
-
-### Minimal example (plain string input)
+All CLI tools live in `src/tools/`. Each tool is an instance of the `Tool` class exported from `src/core/tool.ts`.
 
 ```ts
-// src/tools/myTool.ts
-import { Tool } from '../core/tool.js';
-
-export const myTool = new Tool({
-  name: 'myTool',
-  description: 'One-line description of what this tool does',
-  inputDescription: 'What to pass in',
-  examples: ['example input'],
-  func: async (input: string) => {
-    return `Result: ${input}`;
-  },
-});
-```
-
-### Recommended: add a Zod schema for structured input
-
-```ts
-// src/tools/myTool.ts
 import { Tool, z } from '../core/tool.js';
 
-const myToolSchema = z.object({
-  value: z.string().min(1, 'value must not be empty').describe('The value to process'),
-});
-
 export const myTool = new Tool({
   name: 'myTool',
-  description: 'One-line description of what this tool does',
-  inputDescription: 'JSON object with a "value" field (e.g. {"value": "hello"})',
-  examples: ['{"value": "hello"}'],
-  inputSchema: myToolSchema,       // <-- Zod validates before func is called
-  func: async ({ value }) => {
-    return `Result: ${value}`;
+  description: 'What this tool does',
+  inputDescription: 'Input format description',
+  schema: z.object({ query: z.string() }),
+  func: async ({ query }) => {
+    return `Result for: ${query}`;
   },
 });
 ```
 
-When `inputSchema` is provided:
-- The raw string from the LLM is **JSON-parsed** first.
-- The parsed object is **validated against the Zod schema**.
-- On failure, a clear human-readable error is returned — `func` is never called.
-
-### Register your tool
-
-Open `src/tools/index.ts` and export your new tool, then register it in `src/index.ts` (or wherever the `ToolRegistry` is assembled).
-
----
-
-## Code Style
-
-- **TypeScript strict mode** — no implicit `any`, no unused variables.
-- **Prettier** is configured in `.prettierrc` — run `npx prettier --write "src/**/*.ts"` before committing.
-- Use `z` (re-exported from `src/core/tool.ts`) for all Zod schemas — no need to import zod directly in tool files.
-- Prefer `async/await` over raw Promises.
-- Keep tool functions focused — one tool, one job.
+Register your tool in `src/tools/index.ts` and `src/index.ts`.
 
 ---
 
 ## Commit Messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: add wikipedia tool with Zod schema
-fix: handle empty expression in calculator tool
-refactor: extract formatZodIssues into core/tool.ts
-docs: update README with tool usage examples
-chore: add .prettierrc config
-```
+- `feat: ...`
+- `fix: ...`
+- `docs: ...`
+- `chore: ...`
 
 ---
 
 ## Pull Request Process
 
-1. Ensure `npx tsc --noEmit` passes with zero errors.
-2. Make sure your code is formatted (`npx prettier --check "src/**/*.ts"`).
-3. Write a clear PR description — what changed and why.
-4. Link any related issues in the PR body.
-5. A maintainer will review and merge once everything looks good.
+1. Ensure `task typecheck` and `task lint` pass.
+2. Ensure code is formatted.
+3. Provide a clear description of changes.
+4. A maintainer will review your PR.
 
 ---
 
 ## Questions?
 
-Open an [issue](https://github.com/anishs1207/agentic-framework/issues) and tag it with `question`. Happy hacking! 🚀
+Open an [issue](https://github.com/anishs1207/agentic-cli/issues) or reach out to the maintainers. Happy hacking! 🚀
+
+*Last Updated: 2026-03-28*
